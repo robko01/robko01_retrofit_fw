@@ -15,6 +15,11 @@ Setup the WiFi password.
     setx YOUR_PASS "\"YOUR_PASS\"" /m
 ```
 
+OTA password hash.
+```sh
+    setx OTA_PASS_HASH "\"OTA_PASS_HASH\"" /m
+```
+
 Wireguard endpoint IP address.
 ```sh
     setx WG_ENDPOINT "\"WG_ENDPOINT\"" /m
