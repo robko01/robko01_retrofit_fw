@@ -39,3 +39,11 @@ Wireguard server public key.
 ```sh
     setx WG_PUBLIC_KEY "\"WG_PUBLIC_KEY\"" /m
 ```
+
+## Notes
+
+[Doc](https://docs.platformio.org/en/latest/envvars.html) specification how to use environment variables in build time.
+
+[Article](https://community.platformio.org/t/providing-credentials-without-the-keys-being-displayed-in-the-code/32437/3) that describe how to use commands described previous:
+
+
