@@ -46,4 +46,6 @@ Wireguard server public key.
 
 [Article](https://community.platformio.org/t/providing-credentials-without-the-keys-being-displayed-in-the-code/32437/3) that describe how to use commands described previous:
 
+## Wireguard
+
 
