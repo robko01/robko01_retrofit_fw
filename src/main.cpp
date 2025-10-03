@@ -1054,8 +1054,9 @@ void show_device_properties()
   DEBUGLOG("Sketch size: %u\r\n", ESP.getSketchSize());
   DEBUGLOG("Free flash space: %u\r\n", ESP.getFreeSketchSpace());
   DEBUGLOG("Free heap: %d\r\n", ESP.getFreeHeap());
-  DEBUGLOG("Firmware version: %s\r\n", ESP_FW_VERSION);
   DEBUGLOG("SDK version: %s\r\n", ESP.getSdkVersion());
+  DEBUGLOG("Build name: %s\r\n", BUILD_NAME);
+  DEBUGLOG("Build version: %s\r\n", BUILD_VERSION);
 #if defined(ENABLE_WIFI)
   DEBUGLOG("MAC address: %s\r\n", WiFi.macAddress().c_str());
 #endif // defined(ENABLE_WIFI)
@@ -3615,8 +3616,12 @@ void init_ps4()
   DEBUGLOG(__PRETTY_FUNCTION__);
   DEBUGLOG("\r\n");
 #endif
-
-  PS4.begin(HOST_MAC);
+  DEBUGLOG("PS4_MAC: %s\r\n", PS4_MAC);
+  if (!PS4.begin(PS4_MAC))
+  {
+    DEBUGLOG("Can not run PS4 control module.\r\n");
+    for(;;){}
+  }
 
   // Setup the WDT.
   PS4UpdateTimer_g = new FxTimer();
