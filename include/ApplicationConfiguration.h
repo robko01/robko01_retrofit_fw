@@ -29,8 +29,6 @@
 #include "WProgram.h"
 #endif // defined(ARDUINO) && ARDUINO >= 100
 
-#define ESP_FW_VERSION "01.00"
-
 #pragma region Options
 
 // TODO: All the features can be made a CPU_FLASH flags.
@@ -831,8 +829,8 @@ const float S6A3 = (55000 / 90) * 0.7; // 0.7
  * @brief Host MAC.
  *
  */
-#if !defined(HOST_MAC)
-#define HOST_MAC "XX:XX:XX:XX:XX:XX"
+#if !defined(PS4_MAC)
+#define PS4_MAC "XX:XX:XX:XX:XX:XX"
 #endif
 
 #if !defined(BATT_MIN_LEVEL)
