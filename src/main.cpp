@@ -78,6 +78,11 @@
 #include <ETH.h>
 #endif // defined(ENABLE_ETH)
 
+#if defined(ENABLE_ETH_ENC28J60)
+#include <SPI.h>
+#include <EthernetENC.h>
+#endif // defined(ENABLE_ETH_ENC28J60)
+
 #pragma region mDNS
 #if defined(ENABLE_MDNS)
 #include <ESPmDNS.h>
@@ -2180,7 +2185,7 @@ if (!EnableSUPER_g)
   // Initialize the SUPER protocol parser.
   SUPER.setCbRequest(cbRequestHandler);
 
-  #if defined(SUPER_TCP)
+#if defined(SUPER_TCP)
   // Start the server.
   TCPServer_g.begin();
 #endif
