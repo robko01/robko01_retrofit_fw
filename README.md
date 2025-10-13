@@ -1,43 +1,64 @@
-# robko01_retrofit_fw
 
+# Robko01 Retrofit Firmware
+
+This repository contains the firmware and build configuration for the Robko01 retrofit project. It provides PlatformIO environments, example configuration files, and helper scripts to build, flash, and update firmware for retrofit hardware. The firmware integrates WiFi and WireGuard networking support and includes optional OTA update flows and multiple serial environment configurations for different use cases. Use the provided PlatformIO INI files and the pre-build script to customize builds for local, OTA, and remote deployments. The instructions below explain how to set environment variables needed at build time and how to supply device-specific values such as PS4 controller MAC addresses.
 
 
 ## Setup the environment variables 
 **This commands are for Windows terminal only.**
 
+### Wi-Fi
 Setup the WiFi SSID name.
 ```sh
-    setx WIFI_SSID "\"YOUR_SSID\"" /m
+    set WIFI_SSID="\"YOUR_SSID\""
 ```
 
 Setup the WiFi password.
 ```sh
-    setx YOUR_PASS "\"YOUR_PASS\"" /m
+    set YOUR_PASS="\"YOUR_PASS\""
 ```
 
-OTA password hash.
+### OTA
+port
 ```sh
-    setx OTA_PASS_HASH "\"OTA_PASS_HASH\"" /m
+    set OTA_PORT=3232
 ```
 
-Wireguard endpoint IP address.
+host
 ```sh
-    setx WG_ENDPOINT "\"WG_ENDPOINT\"" /m
+    set OTA_HOST_NAME="\"Robko01\""
 ```
 
-Wireguard local IP address.
+password hash
 ```sh
-    setx WG_LOCAL_IP "\"WG_LOCAL_IP\"" /m
+    set OTA_PASS_HASH="\"21232f297a57a5a743894a0e4a801fc3\""
 ```
 
-Wireguard your private key.
+### Wireguard
+Endpoint IP address.
 ```sh
-    setx WG_PRIVATE_KEY "\"WG_PRIVATE_KEY\"" /m
+    set WG_ENDPOINT="\"WG_ENDPOINT\""
 ```
 
-Wireguard server public key.
+Local IP address.
 ```sh
-    setx WG_PUBLIC_KEY "\"WG_PUBLIC_KEY\"" /m
+    set WG_LOCAL_IP="\"WG_LOCAL_IP\""
+```
+
+Your private key.
+```sh
+    set WG_PRIVATE_KEY="\"WG_PRIVATE_KEY\""
+```
+
+Server public key.
+```sh
+    set WG_PUBLIC_KEY="\"WG_PUBLIC_KEY\""
+```
+
+### Playstation 4 controller
+PS4 controller MAC address.
+```sh
+    set PS4_MAC="\"XX:XX:XX:XX:XX:XX\""
 ```
 
 ## Notes
