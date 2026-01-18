@@ -318,19 +318,28 @@ pio test -e native
    )"
    ```
 
-4. **Merge feature branch to dev (with --no-ff to preserve branch history):**
+4. **Test the feature before merging:**
+   - For software-only changes: Run build and verify functionality
+   - For hardware-dependent changes: **ASK the user to test manually**
+   - Never merge untested code into dev
+
+5. **ASK before merging to dev:**
+   - Always ask the user for approval before merging feature into dev
+   - Example: "Feature is ready and committed. May I merge to dev and main?"
+
+6. **Merge feature branch to dev (with --no-ff to preserve branch history):**
    ```bash
    git checkout dev
    git merge feature/<short-description> --no-ff -m "Merge feature/<short-description> into dev"
    ```
 
-5. **Merge dev to main (with --no-ff to preserve branch history):**
+7. **Merge dev to main (with --no-ff to preserve branch history):**
    ```bash
    git checkout main
    git merge dev --no-ff -m "Merge dev into main"
    ```
 
-6. **Push both branches and clean up:**
+8. **Push both branches and clean up:**
    ```bash
    git push origin main
    git push origin dev
