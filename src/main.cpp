@@ -725,6 +725,12 @@ char CommandLine_g[LINE_LENGTH];
  *
  */
 char Response_g[CommandParser_t::MAX_RESPONSE_SIZE];
+
+/**
+ * @brief 
+ * 
+ */
+double MotorsSpeed_g;
 #endif // defined(ENABLE_TCM_COMMANDS)
 
 #if defined(ENABLE_WDT)
@@ -859,7 +865,7 @@ void setup()
 
 #if defined(ENABLE_LIMITS)
   init_limits();
-  find_limits();
+  // find_limits();
 #endif // defined(ENABLE_LIMITS)
 
 #if defined(ENABLE_ESTOP)
@@ -1502,7 +1508,7 @@ if (!EnableLimits_g)
   // Begin time.
   t0 = millis();
 
-  // This is in case the switch is allready hit.
+  // This is in case the switch is already hit.
   M1LimitSwitch_g.loop();
   while (!M1LimitSwitch_g.isPressed())
   {
@@ -1539,7 +1545,7 @@ if (!EnableLimits_g)
   stepper1.setSpeed(SLOW_BACKWARD_SPS);
 #endif // defined(ENABLE_MOTORS)
 
-  // This is in case the switch is allready hit.
+  // This is in case the switch is already hit.
   M1LimitSwitch_g.loop();
   while (M1LimitSwitch_g.isPressed() == 1)
   {
@@ -1567,7 +1573,7 @@ if (!EnableLimits_g)
   // Begin time.
   t0 = millis();
 
-  // This is in case the switch is allready hit.
+  // This is in case the switch is already hit.
   M2LimitSwitch_g.loop();
   while (!M2LimitSwitch_g.isPressed())
   {
@@ -1604,7 +1610,7 @@ if (!EnableLimits_g)
   stepper2.setSpeed(-SLOW_BACKWARD_SPS);
 #endif // defined(ENABLE_MOTORS)
 
-  // This is in case the switch is allready hit.
+  // This is in case the switch is already hit.
   M2LimitSwitch_g.loop();
   while (M2LimitSwitch_g.isPressed() == 1)
   {
@@ -1629,7 +1635,7 @@ if (!EnableLimits_g)
   stepper3.setSpeed(FAST_FORWARD_SPS);
 #endif // defined(ENABLE_MOTORS)
 
-  // This is in case the switch is allready hit.
+  // This is in case the switch is already hit.
   M3LimitSwitch_g.loop();
   while (M3LimitSwitch_g.isPressed())
   {
@@ -1650,7 +1656,7 @@ if (!EnableLimits_g)
   // Begin time.
   t0 = millis();
 
-  // This is in case the switch is allready hit.
+  // This is in case the switch is already hit.
   M3LimitSwitch_g.loop();
   while (!M3LimitSwitch_g.isPressed() == 1)
   {
@@ -1697,7 +1703,7 @@ if (!EnableLimits_g)
   // Begin time.
   t0 = millis();
 
-  // This is in case the switch is allready hit.
+  // This is in case the switch is already hit.
   M6LimitSwitch_g.loop();
   while (M6LimitSwitch_g.isPressed())
   {
@@ -1734,7 +1740,7 @@ if (!EnableLimits_g)
   stepper6.setSpeed(SLOW_BACKWARD_SPS);
 #endif // defined(ENABLE_MOTORS)
 
-  // This is in case the switch is allready hit.
+  // This is in case the switch is already hit.
   M6LimitSwitch_g.loop();
   while (!M6LimitSwitch_g.isPressed() == 1)
   {
@@ -2519,7 +2525,7 @@ if (!EnableSUPER_g)
 
 #if defined(ENABLE_LIMITS)
     m_payloadResponse[0] = InputsState_g; // Robko01.get_port_a();
-#endif                                    // ENABLE_LIMITS
+#endif // ENABLE_LIMITS
 
 #if defined(ENABLE_WDT)
     feed_wdt();
@@ -2737,7 +2743,7 @@ if (!EnableTCM_g)
     if((RecvCharL==KEY_CR[0]) || (RecvCharL==KEY_LF[0]))
     {
       LineLengthL = CharIndexL;
-      DEBUGLOG("LineLengthL %d; CharIndexL %d\r\n", LineLengthL, CharIndexL);
+      // DEBUGLOG("LineLengthL %d; CharIndexL %d\r\n", LineLengthL, CharIndexL);
     }
 
     // for (int index = 0; index < CharIndexL; index++)
@@ -2825,6 +2831,29 @@ if (!EnableTCM_g)
       DEBUGLOG("\r\nResponse: %s\r\n", Response_g);
     }
   }
+
+#if defined(ENABLE_WDT)
+  if (wdt_expired())
+  {
+#if defined(ENABLE_MOTORS)
+    if (MotorsEnabled_g == true)
+    {
+      DEBUGLOG("WDT EXPIRED...\r\n");
+      enable_drivers(false);
+    }
+#endif // ENABLE_MOTORS
+  }
+  else
+  {
+#if defined(ENABLE_MOTORS)
+    if (MotorsEnabled_g == false)
+    {
+      DEBUGLOG("WDT RESET BY NEW TCM PACKAGE...\r\n");
+      enable_drivers(true);
+    }
+#endif // ENABLE_MOTORS
+  }
+#endif // ENABLE_WDT
 }
 
 /**
@@ -2909,7 +2938,7 @@ if (!EnableTCM_g)
   // Begin time.
   t0 = millis();
 
-  // This is in case the switch is allready hit.
+  // This is in case the switch is already hit.
   M6LimitSwitch_g.loop();
   while (M6LimitSwitch_g.isPressed())
   {
@@ -2946,7 +2975,7 @@ if (!EnableTCM_g)
   stepper6.setSpeed(SLOW_BACKWARD_SPS);
 #endif // defined(ENABLE_MOTORS)
 
-  // This is in case the switch is allready hit.
+  // This is in case the switch is already hit.
   M6LimitSwitch_g.loop();
   while (!M6LimitSwitch_g.isPressed() == 1)
   {
@@ -3088,7 +3117,11 @@ if (!EnableTCM_g)
 }
 #endif // defined(ENABLE_FEATURES_FLAGS)
 
-  DEBUGLOG("Set the robot\r\n");
+  // DEBUGLOG("Set the robot\r\n");
+  MotorsSpeed_g = args[0].asDouble;
+  snprintf(response,
+           CommandParser_t::MAX_RESPONSE_SIZE,
+           "\r\nOK\r\n");
 }
 
 /**
@@ -3124,13 +3157,15 @@ if (!EnableTCM_g)
   // DEBUGLOG("J4: %d ", (int32_t)args[4].asDouble);
   // DEBUGLOG("J5: %d ", (int32_t)args[5].asDouble);
   // DEBUGLOG("J6: %d ", (int32_t)args[6].asDouble);
+  MotorsSpeed_g = args[0].asDouble;
+
 #if defined(ENABLE_MOTORS)
-  stepper1.setSpeed(args[0].asDouble);
-  stepper2.setSpeed(args[0].asDouble);
-  stepper3.setSpeed(args[0].asDouble);
-  stepper4.setSpeed(args[0].asDouble);
-  stepper5.setSpeed(args[0].asDouble);
-  stepper6.setSpeed(args[0].asDouble);
+  stepper1.setSpeed(MotorsSpeed_g);
+  stepper2.setSpeed(MotorsSpeed_g);
+  stepper3.setSpeed(MotorsSpeed_g);
+  stepper4.setSpeed(MotorsSpeed_g);
+  stepper5.setSpeed(MotorsSpeed_g);
+  stepper6.setSpeed(MotorsSpeed_g);
 
   stepper1.moveTo(args[1].asDouble);
   stepper2.moveTo(args[2].asDouble);
@@ -3143,6 +3178,10 @@ if (!EnableTCM_g)
 
   enable_drivers(true);
 #endif // defined(ENABLE_MOTORS)
+
+#if defined(ENABLE_WDT)
+    feed_wdt();
+#endif // ENABLE_WDT
 
   snprintf(response,
            CommandParser_t::MAX_RESPONSE_SIZE,
@@ -3937,4 +3976,4 @@ void update_ps4()
   }
 }
 #endif // defined(ENABLE_PS4)
-#pragma endregion
+#pragma endregion // Functions
