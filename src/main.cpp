@@ -64,9 +64,7 @@
 #include <Button2.h>
 #endif // defined(ENABLE_ESTOP) || defined(ENABLE_LIMITS)
 
-#if defined(ENABLE_FEATURES_FLAGS)
-#include <Preferences.h>
-#endif // defined(ENABLE_FEATURES_FLAGS)
+
 
 #if defined(ENABLE_WIFI)
 #include <WiFi.h>
@@ -585,75 +583,7 @@ Button2 EStopSwitch_g;
 uint8_t InputsState_g;
 #endif // defined(ENABLE_ESTOP) || defined(ENABLE_LIMITS)
 
-#if defined(ENABLE_FEATURES_FLAGS)
-/**
- * @brief preferences instance.
- * 
- */
-Preferences Preferences_g;
 
-/**
- * @brief Enable motors IO flag.
- * 
- */
-bool EnableMotorsIO_g;
-
-/**
- * @brief Enable motors flag.
- * 
- */
-bool EnableMotors_g;
-
-/**
- * @brief Enable limit switches flag.
- * 
- */
-bool EnableLimits_g;
-
-/**
- * @brief Enable E-Stop switch flag.
- * 
- */
-bool EnableEStop_g;
-
-/**
- * @brief Enable WiFi interface flag.
- * 
- */
-bool EnableWifiInterface_g;
-
-/**
- * @brief Enable NTP client flag.
- * 
- */
-bool EnableNTP_g;
-
-/**
- * @brief Enable WireGuard flag.
- * 
- */
-bool EnableWG_g;
-
-/**
- * @brief Enable OTA flag.
- * 
- */
-bool EnableOTA_g;
-
-/**
- * @brief Enable SUPER protocol.
- * 
- */
-bool EnableSUPER_g;
-
-/**
- * @brief Enable TCM protocol.
- * 
- */
-bool EnableTCM_g;
-
-bool EnableWDT_g;
-#endif // defined(ENABLE_FEATURES_FLAGS)
 
 #if defined(ENABLE_WIFI)
 
@@ -872,40 +802,7 @@ void setup()
   init_estop();
 #endif // defined(ENABLE_ESTOP)
 
-#if defined(ENABLE_FEATURES_FLAGS)
-  // Open Preferences with my-app namespace. Each application module, library, etc
-  // has to use a namespace name to prevent key name collisions. We will open storage in
-  // RW-mode (second parameter has to be false).
-  // Note: Namespace name is limited to 15 chars.
-  Preferences_g.begin(PREF_NAME, false);
 
-  // Remove all Preferences_g under the opened namespace
-  Preferences_g.clear();
-
-  // Or remove the counter key only
-  //Preferences_g.remove("counter");
-
-  // Get the counter value, if the key does not exist, return a default value of 0
-  // Note: Key name is limited to 15 chars.
-  
-  EnableMotorsIO_g = Preferences_g.getBool(SF_ENABLE_MOTORS_IO, false);
-  EnableMotors_g  = Preferences_g.getBool(SF_ENABLE_MOTORS, false);
-  EnableLimits_g  = Preferences_g.getBool(SF_ENABLE_LIMITS, false);
-  EnableEStop_g  = Preferences_g.getBool(SF_ENABLE_ESTOP, false);
-  EnableWifiInterface_g  = Preferences_g.getBool(SF_ENABLE_WIFI_IF, false);
-  EnableNTP_g  = Preferences_g.getBool(SF_ENABLE_NTP, false);
-  EnableWG_g  = Preferences_g.getBool(SF_ENABLE_WG, false);
-  EnableOTA_g = Preferences_g.getBool(SF_ENABLE_OTA, false);
-  EnableSUPER_g = Preferences_g.getBool(SF_ENABLE_SUPER, false);
-  EnableTCM_g = Preferences_g.getBool(SF_ENABLE_TCM, false);
-  EnableWDT_g = Preferences_g.getBool(SF_ENABLE_WDT, false);
-
-  // Store the counter to the Preferences
-  // Preferences_g.putUInt(SF_ENABLE_MOTORS_IO, EnableMotorsIO_g);
-
-  // Close the Preferences
-  Preferences_g.end();
-#endif // defined(ENABLE_FEATURES_FLAGS)
 
 #if defined(ENABLE_WIFI)
   init_wifi();
@@ -1006,15 +903,7 @@ void loop()
 #endif // defined(ENABLE_PS4)
 
 #if defined(ENABLE_OTA)
-#if defined(ENABLE_FEATURES_FLAGS)
-  // If the flag is true.
-  if (EnableOTA_g)
-  {
-    ArduinoOTA.handle();
-  }
-#else // !defined(ENABLE_FEATURES_FLAGS)
   ArduinoOTA.handle();
-#endif // defined(ENABLE_FEATURES_FLAGS)
 #endif // defined(ENABLE_OTA)
 
 #if defined(ENABLE_MOTORS)
@@ -1086,17 +975,6 @@ void init_motors_pins()
   DEBUGLOG(__PRETTY_FUNCTION__);
   DEBUGLOG("\r\n");
 #endif // SHOW_FUNC_NAMES
-
-#if defined(ENABLE_FEATURES_FLAGS)
-// If the flag is false.
-if (!EnableMotorsIO_g)
-{
-  // Print cancel execution message.
-  DEBUGLOG("Cancel execution: %s\r\n", __PRETTY_FUNCTION__);
-  // Exit from the function.
-  return;
-}
-#endif // defined(ENABLE_FEATURES_FLAGS)
 
 #if defined(ENABLE_STATUS_LCD)
   sprintf(LCDFirstLine_g, __FUNCTION__);
@@ -1177,17 +1055,6 @@ void init_drivers()
   DEBUGLOG("\r\n");
 #endif // SHOW_FUNC_NAMES
 
-#if defined(ENABLE_FEATURES_FLAGS)
-// If the flag is false.
-if (!EnableMotors_g)
-{
-  // Print cancel execution message.
-  DEBUGLOG("Cancel execution: %s\r\n", __PRETTY_FUNCTION__);
-  // Exit from the function.
-  return;
-}
-#endif // defined(ENABLE_FEATURES_FLAGS)
-
 #if defined(ENABLE_STATUS_LCD)
   sprintf(LCDFirstLine_g, __FUNCTION__);
   draw_lcd();
@@ -1251,17 +1118,6 @@ void enable_drivers(bool state)
   DEBUGLOG("\r\n");
 #endif // SHOW_FUNC_NAMES
 
-#if defined(ENABLE_FEATURES_FLAGS)
-// If the flag is false.
-if (!EnableMotors_g)
-{
-  // Print cancel execution message.
-  DEBUGLOG("Cancel execution: %s\r\n", __PRETTY_FUNCTION__);
-  // Exit from the function.
-  return;
-}
-#endif // defined(ENABLE_FEATURES_FLAGS)
-
 #if defined(ENABLE_STATUS_LCD)
   sprintf(LCDFirstLine_g, __FUNCTION__);
   draw_lcd();
@@ -1321,17 +1177,6 @@ void update_drivers()
   DEBUGLOG("\r\n");
 #endif // SHOW_FUNC_NAMES
 
-#if defined(ENABLE_FEATURES_FLAGS)
-// If the flag is false.
-if (!EnableMotors_g)
-{
-  // Print cancel execution message.
-  // DEBUGLOG("Cancel execution: %s\r\n", __PRETTY_FUNCTION__);
-  // Exit from the function.
-  return;
-}
-#endif // defined(ENABLE_FEATURES_FLAGS)
-
   static bool state = false;
   if (OperationMode_g == OperationModes::Positioning)
   {
@@ -1387,17 +1232,6 @@ void init_limits()
   DEBUGLOG("\r\n");
 #endif // SHOW_FUNC_NAMES
 
-#if defined(ENABLE_FEATURES_FLAGS)
-// If the flag is false.
-if (!EnableLimits_g)
-{
-  // Print cancel execution message.
-  DEBUGLOG("Cancel execution: %s\r\n", __PRETTY_FUNCTION__);
-  // Exit from the function.
-  return;
-}
-#endif // defined(ENABLE_FEATURES_FLAGS)
-
 #if defined(ENABLE_STATUS_LCD)
   sprintf(LCDFirstLine_g, __FUNCTION__);
   draw_lcd();
@@ -1433,17 +1267,6 @@ void update_limits()
   DEBUGLOG(__PRETTY_FUNCTION__);
   DEBUGLOG("\r\n");
 #endif // SHOW_FUNC_NAMES
-
-#if defined(ENABLE_FEATURES_FLAGS)
-// If the flag is false.
-if (!EnableLimits_g)
-{
-  // Print cancel execution message.
-  // DEBUGLOG("Cancel execution: %s\r\n", __PRETTY_FUNCTION__);
-  // Exit from the function.
-  return;
-}
-#endif // defined(ENABLE_FEATURES_FLAGS)
 
   M1LimitSwitch_g.loop();
   M2LimitSwitch_g.loop();
