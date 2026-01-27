@@ -775,44 +775,7 @@ A0 A1 A2
 #endif // defined(ENABLE_STATUS_LCD)
 #pragma endregion
 
-#pragma region SHMR
-#if defined(ENABLE_SHMR)
 
-#define MOTOR_SPEED (2E+2)
-#define MOTOR_SLOW_SPEED (MOTOR_SPEED / 2)
-#define MOTOR_MAX_SPEED MOTOR_SPEED
-
-#define MOTOR_SPEED_6 (MOTOR_SPEED * 0.6F)
-#define MOTOR_SLOW_SPEED_6 (MOTOR_SPEED_6 / 2)
-#define MOTOR_MAX_SPEED_6 (MOTOR_SPEED_6)
-
-#define MOTOR_ACCEL (1E+2)
-
-
-#define AXIS_TO_CONTROL 4
-
-#define MOVE_TO_ABSOLUTE_ANGLES_Q1Q2Q3 17
-#define FIND_AND_GO_TO_ZEROS 18
-#define GRIPPER_GRIP 19
-#define GRIPPER_UNGRIP 20
-#define GRIPPER_OPEN_TO_ABSOLUTE_DISTANCE 21
-
-// коэффициенты преобразования углов в микрошаги
-const float S1 = -59800 / 90;
-const float S2 = 59200 / 90;
-const float S3 = -36100 / 90.7;
-const float S6 = 500;
-const float S6A2 = -(55000 / 90) * 0.04;
-const float S6A3 = (55000 / 90) * 0.7; // 0.7
-
-// после обнуления на сколько разомкнуть схват
-#define A6_ZERO 20
-
-// расстояние между губками и объектом после разжатия
-#define A6_UNGRIP_DIST 6
-
-#endif			  // defined(ENABLE_SHMR)
-#pragma endregion // SHMR
 
 #pragma region PS4
 #if defined(ENABLE_PS4)
