@@ -329,7 +329,44 @@
 #endif			  // defined(ENABLE_LIMITS)
 #pragma endregion // ENABLE_LIMITS
 
-// SHMR configuration removed
+#pragma region E-Stop
+#if defined(ENABLE_ESTOP)
+/**
+ * @brief Debounce time for E-Stop switches input. [ms]
+ *
+ */
+#define ESTOP_TIME_MS 100
+#endif // defined(ENABLE_ESTOP)
+#pragma endregion // E-Stop
+
+#pragma region WiFi Configuration
+#if defined(ENABLE_WIFI)
+#if !defined(WIFI_SSID)
+#define WIFI_SSID "DEFUALT_WIFI"
+#endif
+
+#if !defined(WIFI_PASS)
+#define WIFI_PASS "DEFUALT_WIFI"
+#endif
+
+#if !defined(WIFI_HOST_NAME)
+#define WIFI_HOST_NAME "ROBKO01"
+#endif
+
+#if !defined(WIFI_RECONNECT_TIME_MS)
+#define WIFI_RECONNECT_TIME_MS 5000
+#endif
+#endif // defined(ENABLE_WIFI)
+#pragma endregion // WiFi Configuration
+
+#pragma region NTP Client
+#if defined(ENABLE_NTP)
+/**
+ * @brief Time zone of Bulgaria / Sofia.
+ *
+ */
+#if !defined(NTP_TIMEZONE)
+#define NTP_TIMEZONE 2
 #endif
 
 /**
@@ -631,8 +668,6 @@ A0 A1 A2
 #endif // #if !defined(I2C_TIMEOUT_MS)
 #endif // defined(ENABLE_STATUS_LCD)
 #pragma endregion
-
-// SHMR configuration removed
 
 #pragma region PS4
 #if defined(ENABLE_PS4)
