@@ -391,8 +391,6 @@ void display_text_animation();
 void task_lcd(void *parameter);
 #endif // defined(ENABLE_STATUS_LCD)
 
-// ENABLE_SHMR features removed
-
 #if defined(ENABLE_PS4)
 /**
  * @brief Initialize PS4 host controller.
@@ -689,8 +687,6 @@ char LCDSecondLine_g[LCD_COLUMNS];
 
 #endif // defined(ENABLE_STATUS_LCD)
 
-// SHMR global declarations removed
-
 #if defined(ENABLE_PS4)
 /**
  * @brief PS4 update timer.
@@ -791,8 +787,6 @@ void setup()
   digitalWrite(SS, HIGH); // Setting SlaveSelect as HIGH (So master does not connect with slave)
 #endif // defined(ENABLE_SPI_IO)
 
-// SHMR initialization removed
-
 #if defined(ENABLE_PS4)
   init_ps4();
 #endif // defined(ENABLE_PS4)
@@ -860,8 +854,6 @@ void loop()
     StorePosition_g = true;
   }
 #endif // defined(ENABLE_MOTORS)
-
-// SHMR runtime runner removed
 
 #if defined(ENABLE_STATUS_LCD)
 #endif // defined(ENABLE_STATUS_LCD)
@@ -1031,8 +1023,6 @@ void init_drivers()
   stepper3.setPinsInverted(true, false, false);
   stepper5.setPinsInverted(true, false, false);
   stepper6.setPinsInverted(true, false, false);
-
-// SHMR stepper assignments removed
 }
 
 /**
@@ -2364,7 +2354,6 @@ if (!EnableSUPER_g)
 
     SUPER.send_raw_response(opcode, StatusCodes::Ok, payload, size - 1);
   }
-// SHMR SUPER opcodes removed
   else
   {
     DEBUGLOG("Unknown operation code: %d\r\n", opcode);
@@ -3207,14 +3196,7 @@ void task_lcd(void *parameter)
 
 #endif // defined(ENABLE_STATUS_LCD)
 
-// SHMR implementations removed
-
 #if defined(ENABLE_PS4)
-
-// #error PS4_MAC
-#if "E8:61:7E:40:63:18" = PS4_MAC
-#error "Unsupported board"
-#endif
 /**
  * @brief Initialize PS4 host controller.
  * 
