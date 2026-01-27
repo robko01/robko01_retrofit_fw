@@ -39,11 +39,13 @@ cwf = os.path.dirname(os.path.abspath("pre_build.py"))
 dotenv_path = os.path.join(cwf, ".env")
 variables = load_env_file(dotenv_path)
 
+print("====================================================")
 # Merge into build flags
 for name in variables:
     print(name, variables[name])
     os.environ[name] = variables[name]
 
-
+print("====================================================")
 for name in os.environ:
     print(name, os.environ[name])
+print("====================================================")

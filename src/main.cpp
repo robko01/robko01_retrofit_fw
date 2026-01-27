@@ -3649,6 +3649,11 @@ void gripperOpenTo(float a6)
 #endif // defined(ENABLE_SHMR)
 
 #if defined(ENABLE_PS4)
+
+// #error PS4_MAC
+#if "E8:61:7E:40:63:18" = PS4_MAC
+#error "Unsupported board"
+#endif
 /**
  * @brief Initialize PS4 host controller.
  * 
