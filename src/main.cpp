@@ -403,29 +403,7 @@ void display_text_animation();
 void task_lcd(void *parameter);
 #endif // defined(ENABLE_STATUS_LCD)
 
-#if defined(ENABLE_SHMR)
-
-float getFloatNumberFromByteArray(uint8_t *byteArr, uint8_t startByteIndex);
-
-float getGripperAbsoluteDistance_FromPayload(uint8_t *payload);
-
-void getAbsolute_Angles_q1q2q3_FromPayload(uint8_t *payload, float *q);
-
-void gripperOpenTo(float a6);
-
-void gripperGrip();
-
-void gripperUngrip();
-
-void goToStartPositions();
-
-void ResetGripper();
-
-void setMotorsSpeed(float motorSpeed_[]);
-
-void sendTaskToSteppers(float a1, float a2, float a3, float a6);
-
-#endif // defined(ENABLE_SHMR)
+// ENABLE_SHMR features removed
 
 #if defined(ENABLE_PS4)
 /**
@@ -723,26 +701,7 @@ char LCDSecondLine_g[LCD_COLUMNS];
 
 #endif // defined(ENABLE_STATUS_LCD)
 
-#if defined(ENABLE_SHMR)
-/**
- * @brief Multistepper controller.
- *
- */
-MultiStepper steppers;
-
-/**
- * @brief Passed positions storage.
- *
- */
-long positions_[AXIS_TO_CONTROL];
-
-/**
- * @brief Temporary value by the time.
- *
- */
-float oldA2, oldA3, a6_offset_a2_a3_;
-
-#endif // defined(ENABLE_SHMR)
+// SHMR global declarations removed
 
 #if defined(ENABLE_PS4)
 /**
@@ -844,18 +803,7 @@ void setup()
   digitalWrite(SS, HIGH); // Setting SlaveSelect as HIGH (So master does not connect with slave)
 #endif // defined(ENABLE_SPI_IO)
 
-#if defined(ENABLE_SHMR)
-  steppers = MultiStepper();
-
-  // Slow speed.
-  float speeds[4] = {MOTOR_SLOW_SPEED, MOTOR_SLOW_SPEED, MOTOR_SLOW_SPEED, MOTOR_SLOW_SPEED_6};
-  setMotorsSpeed(speeds);
-
-  steppers.addStepper(stepper4); // q1
-  steppers.addStepper(stepper1); // q2
-  steppers.addStepper(stepper2); // q3
-  steppers.addStepper(stepper6);
-#endif // defined(ENABLE_SHMR)
+// SHMR initialization removed
 
 #if defined(ENABLE_PS4)
   init_ps4();
@@ -925,9 +873,7 @@ void loop()
   }
 #endif // defined(ENABLE_MOTORS)
 
-#if defined(ENABLE_SHMR)
-// steppers.run();
-#endif // defined(ENABLE_SHMR)
+// SHMR runtime runner removed
 
 #if defined(ENABLE_STATUS_LCD)
 #endif // defined(ENABLE_STATUS_LCD)
@@ -1098,12 +1044,7 @@ void init_drivers()
   stepper5.setPinsInverted(true, false, false);
   stepper6.setPinsInverted(true, false, false);
 
-#if defined(ENABLE_SHMR)
-  steppers.addStepper(stepper3); // q1
-  steppers.addStepper(stepper1); // q2
-  steppers.addStepper(stepper2); // q3
-  steppers.addStepper(stepper6);
-#endif
+// SHMR stepper assignments removed
 }
 
 /**
@@ -2435,43 +2376,7 @@ if (!EnableSUPER_g)
 
     SUPER.send_raw_response(opcode, StatusCodes::Ok, payload, size - 1);
   }
-#if defined(ENABLE_SHMR)
-  else if (opcode == MOVE_TO_ABSOLUTE_ANGLES_Q1Q2Q3)
-  {
-    float q[3];
-    getAbsolute_Angles_q1q2q3_FromPayload(payload, q);
-    DEBUGLOG("Q1: %f; Q2: %f; Q3: %f\r\n", q[0], q[1], q[2]);
-    sendTaskToSteppers(q[0], q[1], q[2], A6_ZERO);
-    // Respond with success.
-    SUPER.send_raw_response(opcode, StatusCodes::Ok, NULL, 0);
-  }
-  else if (opcode == FIND_AND_GO_TO_ZEROS)
-  {
-    goToStartPositions();
-    // Respond with success.
-    SUPER.send_raw_response(opcode, StatusCodes::Ok, NULL, 0);
-  }
-  else if (opcode == GRIPPER_GRIP)
-  {
-    gripperGrip();
-    // Respond with success.
-    SUPER.send_raw_response(opcode, StatusCodes::Ok, NULL, 0);
-  }
-  else if (opcode == GRIPPER_UNGRIP)
-  {
-    gripperUngrip();
-    // Respond with success.
-    SUPER.send_raw_response(opcode, StatusCodes::Ok, NULL, 0);
-  }
-  else if (opcode == GRIPPER_OPEN_TO_ABSOLUTE_DISTANCE)
-  {
-    float a;
-    a = getGripperAbsoluteDistance_FromPayload(payload);
-    gripperOpenTo(a);
-    // Respond with success.
-    SUPER.send_raw_response(opcode, StatusCodes::Ok, NULL, 0);
-  }
-#endif // defined(ENABLE_SHMR)
+// SHMR SUPER opcodes removed
   else
   {
     DEBUGLOG("Unknown operation code: %d\r\n", opcode);
@@ -3314,162 +3219,7 @@ void task_lcd(void *parameter)
 
 #endif // defined(ENABLE_STATUS_LCD)
 
-#if defined(ENABLE_SHMR)
-
-float getFloatNumberFromByteArray(uint8_t *byteArr, uint8_t startByteIndex)
-{
-#if defined(SHOW_FUNC_NAMES)
-  DEBUGLOG("\r\n");
-  DEBUGLOG(__PRETTY_FUNCTION__);
-  DEBUGLOG("\r\n");
-#endif
-
-  uint8_t byteArray[4];
-  uint8_t j = 0;
-  for (uint8_t index = startByteIndex; index < startByteIndex + 4; index++)
-  {
-    byteArray[j] = byteArr[index];
-    j++;
-  }
-  return *((float *)(byteArray));
-}
-
-float getGripperAbsoluteDistance_FromPayload(uint8_t *payload)
-{
-#if defined(SHOW_FUNC_NAMES)
-  DEBUGLOG("\r\n");
-  DEBUGLOG(__PRETTY_FUNCTION__);
-  DEBUGLOG("\r\n");
-#endif
-  return getFloatNumberFromByteArray(payload, 0);
-}
-
-void getAbsolute_Angles_q1q2q3_FromPayload(uint8_t *payload, float *q)
-{
-#if defined(SHOW_FUNC_NAMES)
-  DEBUGLOG("\r\n");
-  DEBUGLOG(__PRETTY_FUNCTION__);
-  DEBUGLOG("\r\n");
-#endif
-
-  q[0] = getFloatNumberFromByteArray(payload, 0);
-  q[1] = getFloatNumberFromByteArray(payload, 4);
-  q[2] = getFloatNumberFromByteArray(payload, 8);
-}
-
-void setMotorsSpeed(float motorSpeed_[])
-{
-#if defined(SHOW_FUNC_NAMES)
-  DEBUGLOG("\r\n");
-  DEBUGLOG(__PRETTY_FUNCTION__);
-  DEBUGLOG("\r\n");
-#endif // SHOW_FUNC_NAMES
-  stepper1.setSpeed(motorSpeed_[0]);
-  stepper2.setSpeed(motorSpeed_[1]);
-  stepper4.setSpeed(motorSpeed_[3]);
-  stepper6.setSpeed(motorSpeed_[4]);
-}
-
-void ResetGripper()
-{
-  stepper6.setCurrentPosition(A6_ZERO * S6); // схват при включении раздвинут на A6_ZERO
-  positions_[3] = A6_ZERO * S6;
-  a6_offset_a2_a3_ = 0;
-  oldA2 = 0;
-  oldA3 = 0;
-}
-
-void sendTaskToSteppers(float a1, float a2, float a3, float a6)
-{
-#if defined(SHOW_FUNC_NAMES)
-  DEBUGLOG("\r\n");
-  DEBUGLOG(__PRETTY_FUNCTION__);
-  DEBUGLOG("\r\n");
-#endif                                                                             // SHOW_FUNC_NAMES
-  a6 = a6 * S6;                                                                    // перевод расстояния между губками (мм) в количество шагов
-  a6_offset_a2_a3_ = a6_offset_a2_a3_ + S6A2 * (a2 - oldA2) + S6A3 * (a3 - oldA3); // поправка для сжатия схвата//??для нуля слишком большие цифры
-  a6 = a6 + a6_offset_a2_a3_;
-  oldA2 = a2;
-  oldA3 = a3;
-
-  positions_[0] = round(a1 * S1);
-  positions_[1] = round(a2 * S2);
-  positions_[2] = round(a3 * S3);
-  positions_[3] = round(a6);
-  steppers.moveTo(positions_);
-}
-
-void goToStartPositions()
-{
-#if defined(SHOW_FUNC_NAMES)
-  DEBUGLOG("\r\n");
-  DEBUGLOG(__PRETTY_FUNCTION__);
-  DEBUGLOG("\r\n");
-#endif // SHOW_FUNC_NAMES
-  float speeds[4] = {MOTOR_SLOW_SPEED, MOTOR_SLOW_SPEED, MOTOR_SLOW_SPEED, MOTOR_SLOW_SPEED_6};
-  setMotorsSpeed(speeds);
-}
-
-void gripperGrip()
-{
-#if defined(SHOW_FUNC_NAMES)
-  DEBUGLOG("\r\n");
-  DEBUGLOG(__PRETTY_FUNCTION__);
-  DEBUGLOG("\r\n");
-#endif // SHOW_FUNC_NAMES
-  checkLimit(4);
-  if (!mLimit_[4].currentValue) // схват разжат
-  {
-    stepper6.setSpeed(MOTOR_SPEED_6);
-    stepper6.setAcceleration(MOTOR_ACCEL);
-    stepper6.move(-100 * S6);
-    while (!mLimit_[4].currentValue) // закончит когда: схват сомкнулся - сработал концевик
-    {
-      stepper6.run();
-      checkLimit(4);
-    }
-    stepper6.stop(); //??
-    ResetGripper();  //----tmp----!!
-  }
-}
-
-void gripperUngrip()
-{
-#if defined(SHOW_FUNC_NAMES)
-  DEBUGLOG("\r\n");
-  DEBUGLOG(__PRETTY_FUNCTION__);
-  DEBUGLOG("\r\n");
-#endif // SHOW_FUNC_NAMES
-  checkLimit(4);
-  if (mLimit_[4].currentValue) // схват сжат
-  {
-    stepper6.setSpeed(MOTOR_SPEED_6);
-    stepper6.setAcceleration(MOTOR_ACCEL);
-    stepper6.move(100 * S6);
-    while (mLimit_[4].currentValue) // закончит когда: схват разжат
-    {
-      stepper6.run();
-      checkLimit(4);
-    }
-    stepper6.stop(); //??
-    // еще немного пусть разожмет
-    stepper6.move(A6_UNGRIP_DIST * S6);
-    stepper6.runToPosition();
-    ResetGripper(); //----tmp----!!
-  }
-}
-
-void gripperOpenTo(float a6)
-{
-  stepper6.setSpeed(MOTOR_SPEED_6);
-  stepper6.setAcceleration(MOTOR_ACCEL);
-  stepper6.moveTo(a6 * S6);
-
-  stepper6.runToPosition();
-  // stepper6.runSpeedToPosition();
-}
-
-#endif // defined(ENABLE_SHMR)
+// SHMR implementations removed
 
 #if defined(ENABLE_PS4)
 
