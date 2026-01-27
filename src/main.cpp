@@ -64,22 +64,10 @@
 #include <Button2.h>
 #endif // defined(ENABLE_ESTOP) || defined(ENABLE_LIMITS)
 
-
-
 #if defined(ENABLE_WIFI)
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #endif // defined(ENABLE_WIFI)
-
-#if defined(ENABLE_ETH)
-#include <WiFi.h>
-#include <ETH.h>
-#endif // defined(ENABLE_ETH)
-
-#if defined(ENABLE_ETH_ENC28J60)
-#include <SPI.h>
-#include <EthernetENC.h>
-#endif // defined(ENABLE_ETH_ENC28J60)
 
 #pragma region mDNS
 #if defined(ENABLE_MDNS)
