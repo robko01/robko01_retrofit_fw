@@ -39,10 +39,30 @@ pio run -t clean
 ├── include/              # Header files
 │   └── ApplicationConfiguration.h  # Feature flags and configuration
 ├── lib/                  # Project-specific libraries
+│   └── Interpolator/     # Multi-joint interpolation library
+├── claude_tests/         # Claude Code test scripts (PowerShell)
 ├── platformio.ini        # Main PlatformIO configuration
 ├── platformio_*.ini      # Environment-specific configurations
 └── .pio/                 # Build output (generated)
 ```
+
+## Claude Tests Folder
+
+The `claude_tests/` folder contains test scripts created by Claude Code for hardware testing.
+
+### Available Test Scripts
+
+| Script | Description | Usage |
+|--------|-------------|-------|
+| `test_interpolator.ps1` | Tests @MOVEJ commands on robot | `powershell -ExecutionPolicy Bypass -File claude_tests/test_interpolator.ps1` |
+
+### Adding New Tests
+
+When creating hardware test scripts:
+1. Place them in `claude_tests/` folder
+2. Use PowerShell for serial communication on Windows
+3. Document the script in this table
+4. Use COM7 at 9600 baud for robot communication
 
 ## C/C++ Naming Conventions
 
