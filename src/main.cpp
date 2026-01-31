@@ -91,6 +91,7 @@
 #if defined(ENABLE_SUPER)
 #include "SUPER.h"
 #include "OperationsCodes.h"
+#include "OpCodesExtension.h"
 #endif // defined(ENABLE_SUPER)
 
 #if defined(ENABLE_TCM_COMMANDS)
@@ -2441,6 +2442,110 @@ if (!EnableSUPER_g)
 
     SUPER.send_raw_response(opcode, StatusCodes::Ok, payload, size - 1);
   }
+#if defined(ENABLE_INTERPOLATOR)
+  else if (opcode == OpCodesExt::MoveInterpolated)
+  {
+    // If motors are not enabled, do not execute.
+    if (MotorsEnabled_g == false)
+    {
+      SUPER.send_raw_response(opcode, StatusCodes::Error, NULL, 0);
+      return;
+    }
+
+    // If robot is moving, do not execute the command.
+    if (MotorState_g != 0)
+    {
+      uint8_t m_payloadResponse[1];
+      m_payloadResponse[0] = MotorState_g;
+      SUPER.send_raw_response(opcode, StatusCodes::Busy, m_payloadResponse, 1);
+      return;
+    }
+
+    // Check if interpolator is already active.
+    if (Interpolator_g.isActive())
+    {
+      SUPER.send_raw_response(opcode, StatusCodes::Busy, NULL, 0);
+      return;
+    }
+
+    // Payload format: 6 x int16_t = 12 bytes (joint target positions)
+    if (size < 12)
+    {
+      SUPER.send_raw_response(opcode, StatusCodes::Error, NULL, 0);
+      return;
+    }
+
+    // Extract target positions from payload (6 x int16_t).
+    int16_t *targetData = (int16_t *)payload;
+    long targetPositions[INTERP_NUM_JOINTS] = {
+        (long)targetData[0], // Joint 1 (Base)
+        (long)targetData[1], // Joint 2 (Shoulder)
+        (long)targetData[2], // Joint 3 (Elbow)
+        (long)targetData[3], // Joint 4 (Left Diff)
+        (long)targetData[4], // Joint 5 (Right Diff)
+        (long)targetData[5]  // Joint 6 (Gripper)
+    };
+
+#if defined(ENABLE_MOTORS)
+    // Get current positions.
+    long currentPositions[INTERP_NUM_JOINTS] = {
+        stepper1.currentPosition(),
+        stepper2.currentPosition(),
+        stepper3.currentPosition(),
+        stepper4.currentPosition(),
+        stepper5.currentPosition(),
+        stepper6.currentPosition()
+    };
+
+    // Set high max speeds for smooth interpolation.
+    stepper1.setMaxSpeed(M1_MAX_SPEED * 2);
+    stepper2.setMaxSpeed(M2_MAX_SPEED * 2);
+    stepper3.setMaxSpeed(M3_MAX_SPEED * 2);
+    stepper4.setMaxSpeed(M4_MAX_SPEED * 2);
+    stepper5.setMaxSpeed(M5_MAX_SPEED * 2);
+    stepper6.setMaxSpeed(M6_MAX_SPEED * 2);
+
+    // Start interpolated motion.
+    if (Interpolator_g.startMotion(currentPositions, targetPositions))
+    {
+      OperationMode_g = OperationModes::Interpolated;
+      enable_drivers(true);
+
+      // Respond with motion duration (4 bytes, uint32_t).
+      uint32_t duration = Interpolator_g.getDuration();
+      uint8_t m_payloadResponse[4];
+      m_payloadResponse[0] = (duration >> 0) & 0xFF;
+      m_payloadResponse[1] = (duration >> 8) & 0xFF;
+      m_payloadResponse[2] = (duration >> 16) & 0xFF;
+      m_payloadResponse[3] = (duration >> 24) & 0xFF;
+      SUPER.send_raw_response(opcode, StatusCodes::Ok, m_payloadResponse, 4);
+    }
+    else
+    {
+      SUPER.send_raw_response(opcode, StatusCodes::Error, NULL, 0);
+    }
+#else
+    SUPER.send_raw_response(opcode, StatusCodes::Error, NULL, 0);
+#endif // defined(ENABLE_MOTORS)
+  }
+  else if (opcode == OpCodesExt::GetInterpolatorState)
+  {
+    // Get interpolator state and progress.
+    uint8_t m_payloadResponse[5];
+    m_payloadResponse[0] = (uint8_t)Interpolator_g.getState();
+
+    // Progress as uint16_t (0-10000 representing 0.00-100.00%).
+    uint16_t progress = (uint16_t)(Interpolator_g.getProgress() * 100.0f);
+    m_payloadResponse[1] = (progress >> 0) & 0xFF;
+    m_payloadResponse[2] = (progress >> 8) & 0xFF;
+
+    // Remaining time estimate (not implemented, send 0).
+    m_payloadResponse[3] = 0;
+    m_payloadResponse[4] = 0;
+
+    SUPER.send_raw_response(opcode, StatusCodes::Ok, m_payloadResponse, 5);
+  }
+#endif // defined(ENABLE_INTERPOLATOR)
   else
   {
     DEBUGLOG("Unknown operation code: %d\r\n", opcode);
