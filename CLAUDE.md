@@ -499,3 +499,49 @@ Follow [Keep a Changelog](https://keepachangelog.com/) format:
 ### Security
 - Security-related changes
 ```
+
+### Changelog Update Rules
+
+**IMPORTANT:** Update `CHANGELOG.md` frequently to maintain accurate project history.
+
+**When to update the changelog:**
+
+| Event | Action |
+|-------|--------|
+| New feature added | Add entry under `### Added` |
+| Existing feature modified | Add entry under `### Changed` |
+| Bug fix | Add entry under `### Fixed` |
+| Feature removed | Add entry under `### Removed` |
+| Before merging to main | Ensure all changes are documented |
+
+**Changelog update workflow:**
+
+1. **During feature development:** Add changelog entries as you implement features
+2. **Before committing:** Review and update changelog with all changes
+3. **Before merge to main:** Verify changelog is complete and accurate
+4. **Increment build number:** Update `FW_BUILD_NUMBER` in `Version.h`
+
+**Best practices:**
+
+- Write entries from user perspective (what changed, not how)
+- Use imperative mood: "Add feature" not "Added feature"
+- Group related changes together
+- Include relevant issue/PR numbers if applicable
+- Keep entries concise but descriptive
+
+**Example workflow:**
+```bash
+# 1. Update CHANGELOG.md with new feature
+## [1.0.59] - 2026-01-31
+
+### Added
+- Joint interpolator command for SUPER protocol (OpCode 17)
+- GetInterpolatorState command (OpCode 19)
+
+# 2. Update Version.h
+#define FW_BUILD_NUMBER 59
+
+# 3. Commit both files
+git add CHANGELOG.md include/Version.h
+git commit -m "Add SUPER interpolator commands"
+```
