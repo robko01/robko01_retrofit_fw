@@ -14,19 +14,21 @@ the PlatformIO build system.
 """
 
 import os
-# import ini
-import sys
+import re
 
-print(sys.version_info)
+Import("env")
 
-def load_env_file(path):
+_NUMERIC_RE = re.compile(r"^-?\d+(\.\d+)?$")
+
+
+def _load_env_file(path):
     envs = {}
     if not os.path.exists(path):
         return envs
     with open(path, "r") as f:
         for line in f:
             line = line.strip()
-            if not line or line.startswith("#"):
+            if not line or line.startswith("#") or line.startswith(";"):
                 continue
             if "=" not in line:
                 continue
@@ -34,18 +36,46 @@ def load_env_file(path):
             envs[key.strip()] = value.strip().strip('"').strip("'")
     return envs
 
-# Load variables from .env file in project root
-cwf = os.path.dirname(os.path.abspath("pre_build.py"))
-dotenv_path = os.path.join(cwf, ".env")
-variables = load_env_file(dotenv_path)
 
-print("====================================================")
-# Merge into build flags
-for name in variables:
-    print(name, variables[name])
-    os.environ[name] = variables[name]
+def _coerce_value(raw_value):
+    if _NUMERIC_RE.match(raw_value):
+        try:
+            return int(raw_value)
+        except ValueError:
+            return float(raw_value)
+    return raw_value
 
-print("====================================================")
-for name in os.environ:
-    print(name, os.environ[name])
-print("====================================================")
+
+def _inject_defines(env_map):
+    defines = []
+    for key in _DEFINE_KEYS:
+        value = env_map.get(key)
+        if value is None:
+            continue
+        defines.append((key, _coerce_value(value)))
+    if defines:
+        env.Append(CPPDEFINES=defines)
+
+
+_DEFINE_KEYS = [
+    "WIFI_SSID",
+    "WIFI_PASS",
+    "OTA_PORT",
+    "OTA_HOST_NAME",
+    "OTA_PASS_HASH",
+    "WG_ENDPOINT",
+    "WG_LOCAL_IP",
+    "WG_PRIVATE_KEY",
+    "WG_PUBLIC_KEY",
+    "PS4_MAC",
+]
+
+# Load variables from .env file in project root. External environment values
+# take precedence when provided.
+project_dir = env.get("PROJECT_DIR", os.getcwd())
+dotenv_path = os.path.join(project_dir, ".env")
+file_vars = _load_env_file(dotenv_path)
+merged = dict(file_vars)
+merged.update({k: v for k, v in os.environ.items() if k in _DEFINE_KEYS})
+
+_inject_defines(merged)
