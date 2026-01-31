@@ -395,3 +395,107 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 - `Add WDT integration for motor safety`
 - `Fix serial communication timeout handling`
 - `Enable limits and estop for TCM profile`
+
+## Version and Build Number Management
+
+### Version File Location
+
+The firmware version is centralized in `include/Version.h`:
+
+```cpp
+#define FW_VERSION_MAJOR 1
+#define FW_VERSION_MINOR 0
+#define FW_BUILD_NUMBER 58
+```
+
+### Version Format
+
+`MAJOR.MINOR.BUILD` (e.g., `1.0.58`)
+
+- **MAJOR**: Increment for breaking changes or major new features
+- **MINOR**: Increment for new features or significant improvements
+- **BUILD**: Increment on each merge to main branch
+
+### When to Update Version Numbers
+
+| Change Type | Update |
+|-------------|--------|
+| Merge to main | Increment `FW_BUILD_NUMBER` |
+| New feature | Increment `FW_VERSION_MINOR`, reset `FW_BUILD_NUMBER` to 0 |
+| Breaking change | Increment `FW_VERSION_MAJOR`, reset MINOR and BUILD to 0 |
+| Bug fix | Increment `FW_BUILD_NUMBER` |
+| Documentation only | No version change |
+
+### Build Number Update Workflow
+
+**IMPORTANT:** When merging to main, always update the build number:
+
+1. **Before merging to main**, edit `include/Version.h`:
+   ```cpp
+   // Increment FW_BUILD_NUMBER by 1
+   #define FW_BUILD_NUMBER 59  // was 58
+   ```
+
+2. **Update CHANGELOG.md** with the new version and changes:
+   ```markdown
+   ## [1.0.59] - YYYY-MM-DD
+
+   ### Added
+   - Description of new features
+
+   ### Changed
+   - Description of changes
+
+   ### Fixed
+   - Description of bug fixes
+   ```
+
+3. **Commit the version update** as part of the feature branch before merging
+
+### Files to Update on Version Change
+
+| File | What to Update |
+|------|----------------|
+| `include/Version.h` | `FW_BUILD_NUMBER` (always), `FW_VERSION_MINOR`/`FW_VERSION_MAJOR` (when applicable) |
+| `CHANGELOG.md` | Add new version section with changes |
+
+### Using Version in Code
+
+Include the version header and use the macros:
+
+```cpp
+#include "Version.h"
+
+// Print version
+Serial.printf("Firmware version: %s\n", FW_FULL_VERSION);
+// Output: "Firmware version: v1.0.58"
+
+// Access individual components
+Serial.printf("Build: %d\n", FW_BUILD_NUMBER);
+```
+
+### Changelog Format
+
+Follow [Keep a Changelog](https://keepachangelog.com/) format:
+
+```markdown
+## [MAJOR.MINOR.BUILD] - YYYY-MM-DD
+
+### Added
+- New features
+
+### Changed
+- Changes to existing functionality
+
+### Deprecated
+- Features to be removed in future
+
+### Removed
+- Removed features
+
+### Fixed
+- Bug fixes
+
+### Security
+- Security-related changes
+```

@@ -52,6 +52,7 @@
 #pragma region Headers
 
 #include "ApplicationConfiguration.h"
+#include "Version.h"
 
 #include "DebugPort.h"
 
@@ -968,7 +969,7 @@ void show_device_properties()
   DEBUGLOG("Free heap: %d\r\n", ESP.getFreeHeap());
   DEBUGLOG("SDK version: %s\r\n", ESP.getSdkVersion());
   DEBUGLOG("Build name: %s\r\n", BUILD_NAME);
-  DEBUGLOG("Build version: %s\r\n", BUILD_VERSION);
+  DEBUGLOG("Firmware version: %s\r\n", FW_FULL_VERSION);
 #if defined(ENABLE_WIFI)
   DEBUGLOG("MAC address: %s\r\n", WiFi.macAddress().c_str());
 #endif // defined(ENABLE_WIFI)
