@@ -5,6 +5,15 @@ All notable changes to the Robko 01 Retrofit Firmware project are documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.60] - 2026-01-31
+
+### Added
+- Modbus communication interface using eModbus library
+- Modbus TCP server mode (MODBUS_TCP) for network access
+- Modbus RTU slave mode (MODBUS_RTU) using main Serial port (UART0)
+- New build profiles: modbus_tcp, modbus_rtu
+- Modbus register map for motor positions, speeds, and control
+
 ## [1.0.59] - 2026-01-31
 
 ### Added

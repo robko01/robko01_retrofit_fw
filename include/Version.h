@@ -53,9 +53,9 @@
 /**
  * @brief Build number.
  * Increment on each merge to main branch.
- * Current build: 59
+ * Current build: 60
  */
-#define FW_BUILD_NUMBER 59
+#define FW_BUILD_NUMBER 60
 
 /**
  * @brief Version string macro.

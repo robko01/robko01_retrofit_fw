@@ -69,6 +69,8 @@
 
 // #define ENABLE_INTERPOLATOR
 
+// #define ENABLE_MODBUS
+
 #define SHOW_FUNC_NAMES
 
 #pragma endregion // Options
@@ -803,5 +805,63 @@ A0 A1 A2
 
 #endif // defined(ENABLE_PS4)
 #pragma endregion // PS4
+
+#pragma region Modbus
+#if defined(ENABLE_MODBUS)
+
+/**
+ * @brief Modbus slave/server ID.
+ *
+ */
+#if !defined(MODBUS_SLAVE_ID)
+#define MODBUS_SLAVE_ID 1
+#endif
+
+#if defined(MODBUS_TCP)
+/**
+ * @brief Modbus TCP server port.
+ *
+ */
+#if !defined(MODBUS_TCP_PORT)
+#define MODBUS_TCP_PORT 502
+#endif
+
+/**
+ * @brief Maximum number of concurrent TCP clients.
+ *
+ */
+#if !defined(MODBUS_TCP_MAX_CLIENTS)
+#define MODBUS_TCP_MAX_CLIENTS 4
+#endif
+
+/**
+ * @brief TCP connection timeout in milliseconds.
+ *
+ */
+#if !defined(MODBUS_TCP_TIMEOUT_MS)
+#define MODBUS_TCP_TIMEOUT_MS 20000
+#endif
+#endif // defined(MODBUS_TCP)
+
+#if defined(MODBUS_RTU)
+/**
+ * @brief Modbus RTU baudrate (uses main Serial port).
+ *
+ */
+#if !defined(MODBUS_RTU_BAUDRATE)
+#define MODBUS_RTU_BAUDRATE 9600
+#endif
+
+/**
+ * @brief Modbus RTU timeout in milliseconds.
+ *
+ */
+#if !defined(MODBUS_RTU_TIMEOUT_MS)
+#define MODBUS_RTU_TIMEOUT_MS 2000
+#endif
+#endif // defined(MODBUS_RTU)
+
+#endif // defined(ENABLE_MODBUS)
+#pragma endregion // Modbus
 
 #endif // _APPLICATIONCONFIGURATION_h
