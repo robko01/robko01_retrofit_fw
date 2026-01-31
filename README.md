@@ -112,6 +112,8 @@ Instead of setting environment variables manually each time, you can create a `.
 # Project-level environment values (do not commit secrets to git)
 WIFI_SSID=YourWifiSSID
 WIFI_PASS=YourWifiPassword
+OTA_PORT=3232
+OTA_HOST_NAME=ROBKO01
 OTA_PASS_HASH=21232f297a57a5a743894a0e4a801fc3
 WG_ENDPOINT=1.2.3.4
 WG_LOCAL_IP=10.0.0.2
@@ -122,9 +124,11 @@ PS4_MAC=E8:61:7E:40:63:18
 
 **How to use the `.env` with the current project:**
 
-PlatformIO expands `${sysenv.VAR}` from the process environment when it parses `platformio.ini`. The recommended approach is to export variables into your shell before running PlatformIO.
+`pre_build.py` now loads `.env` and injects the values into the build as C/C++ defines. This means you can keep all build-time settings in `.env` without exporting them in your shell.
 
-**Windows (PowerShell):**
+If you still prefer to override values per session, you can export variables in your shell; environment variables take precedence over `.env`.
+
+**Windows (PowerShell) override:**
 ```powershell
 $env:WIFI_SSID='YourWifiSSID'
 $env:WIFI_PASS='YourWifiPassword'
@@ -132,7 +136,7 @@ $env:OTA_PASS_HASH='21232f297a57a5a743894a0e4a801fc3'
 pio run --environment serial_ps4
 ```
 
-**Windows (cmd.exe):**
+**Windows (cmd.exe) override:**
 ```cmd
 set WIFI_SSID=YourWifiSSID
 set WIFI_PASS=YourWifiPassword
@@ -140,15 +144,13 @@ set OTA_PASS_HASH=21232f297a57a5a743894a0e4a801fc3
 pio run --environment serial_ps4
 ```
 
-**Linux/macOS (bash/zsh):**
+**Linux/macOS (bash/zsh) override:**
 ```bash
 export WIFI_SSID='YourWifiSSID'
 export WIFI_PASS='YourWifiPassword'
 export OTA_PASS_HASH='21232f297a57a5a743894a0e4a801fc3'
 pio run --environment serial_ps4
 ```
-
-**Note about `pre_build.py`:** The repository includes `pre_build.py` as an extra script that reads `.env` and sets `os.environ` during script execution. However, PlatformIO expands the `${sysenv.VAR}` placeholders in `platformio.ini` when it parses the configuration *before* running extra scripts. This means adding a `.env` file alone will not populate `${sysenv.VAR}` in `platformio.ini` for the current build invocation.
 
 **Security note:** Avoid committing `.env` with secrets to source control. Add `.env` to `.gitignore` or use a separate private config.
 
