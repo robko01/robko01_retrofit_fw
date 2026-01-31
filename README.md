@@ -52,12 +52,12 @@ Notes:
 ### Wi-Fi
 Setup the WiFi SSID name.
 ```sh
-    set WIFI_SSID="\"YOUR_SSID\""
+    set WIFI_SSID="YOUR_SSID"
 ```
 
 Setup the WiFi password.
 ```sh
-    set YOUR_PASS="\"YOUR_PASS\""
+    set YOUR_PASS="YOUR_PASS"
 ```
 
 ### OTA
@@ -68,40 +68,89 @@ port
 
 host
 ```sh
-    set OTA_HOST_NAME="\"Robko01\""
+    set OTA_HOST_NAME="Robko01"
 ```
 
 password hash
 ```sh
-    set OTA_PASS_HASH="\"21232f297a57a5a743894a0e4a801fc3\""
+    set OTA_PASS_HASH="21232f297a57a5a743894a0e4a801fc3"
 ```
 
 ### Wireguard
 Endpoint IP address.
 ```sh
-    set WG_ENDPOINT="\"WG_ENDPOINT\""
+    set WG_ENDPOINT="WG_ENDPOINT"
 ```
 
 Local IP address.
 ```sh
-    set WG_LOCAL_IP="\"WG_LOCAL_IP\""
+    set WG_LOCAL_IP="WG_LOCAL_IP"
 ```
 
 Your private key.
 ```sh
-    set WG_PRIVATE_KEY="\"WG_PRIVATE_KEY\""
+    set WG_PRIVATE_KEY="WG_PRIVATE_KEY"
 ```
 
 Server public key.
 ```sh
-    set WG_PUBLIC_KEY="\"WG_PUBLIC_KEY\""
+    set WG_PUBLIC_KEY="WG_PUBLIC_KEY"
 ```
 
-### Playstation 4 controller
+### PlayStation 4 controller
 PS4 controller MAC address.
 ```sh
-    set PS4_MAC="\"XX:XX:XX:XX:XX:XX\""
+    set PS4_MAC="XX:XX:XX:XX:XX:XX"
 ```
+
+### Using a `.env` file
+
+Instead of setting environment variables manually each time, you can create a `.env` file in the project root directory.
+
+**Sample `.env` file:**
+```
+# Project-level environment values (do not commit secrets to git)
+WIFI_SSID=YourWifiSSID
+WIFI_PASS=YourWifiPassword
+OTA_PASS_HASH=21232f297a57a5a743894a0e4a801fc3
+WG_ENDPOINT=1.2.3.4
+WG_LOCAL_IP=10.0.0.2
+WG_PRIVATE_KEY=your_wireguard_private_key_here
+WG_PUBLIC_KEY=server_wireguard_public_key_here
+PS4_MAC=E8:61:7E:40:63:18
+```
+
+**How to use the `.env` with the current project:**
+
+PlatformIO expands `${sysenv.VAR}` from the process environment when it parses `platformio.ini`. The recommended approach is to export variables into your shell before running PlatformIO.
+
+**Windows (PowerShell):**
+```powershell
+$env:WIFI_SSID='YourWifiSSID'
+$env:WIFI_PASS='YourWifiPassword'
+$env:OTA_PASS_HASH='21232f297a57a5a743894a0e4a801fc3'
+pio run --environment serial_ps4
+```
+
+**Windows (cmd.exe):**
+```cmd
+set WIFI_SSID=YourWifiSSID
+set WIFI_PASS=YourWifiPassword
+set OTA_PASS_HASH=21232f297a57a5a743894a0e4a801fc3
+pio run --environment serial_ps4
+```
+
+**Linux/macOS (bash/zsh):**
+```bash
+export WIFI_SSID='YourWifiSSID'
+export WIFI_PASS='YourWifiPassword'
+export OTA_PASS_HASH='21232f297a57a5a743894a0e4a801fc3'
+pio run --environment serial_ps4
+```
+
+**Note about `pre_build.py`:** The repository includes `pre_build.py` as an extra script that reads `.env` and sets `os.environ` during script execution. However, PlatformIO expands the `${sysenv.VAR}` placeholders in `platformio.ini` when it parses the configuration *before* running extra scripts. This means adding a `.env` file alone will not populate `${sysenv.VAR}` in `platformio.ini` for the current build invocation.
+
+**Security note:** Avoid committing `.env` with secrets to source control. Add `.env` to `.gitignore` or use a separate private config.
 
 
 ## Build

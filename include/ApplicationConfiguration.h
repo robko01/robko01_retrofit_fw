@@ -67,117 +67,13 @@
 
 // #define ENABLE_SHMR
 
+// #define ENABLE_INTERPOLATOR
+
 #define SHOW_FUNC_NAMES
 
 #pragma endregion // Options
 
-#pragma region Features Flags
-#if defined(ENABLE_FEATURES_FLAGS)
 
-/**
- * @brief Preferences of the robot.
- * 
- */
-#define PREF_NAME "PREF_ROBKO01"
-
-/**
- * @brief 
- * 
- */
-#define SF_ENABLE_MOTORS_IO "ENB_MOTORS_IO"
-
-/**
- * @brief 
- * 
- */
-#define SF_ENABLE_MOTORS "ENB_MOTORS"
-
-/**
- * @brief 
- * 
- */
-#define SF_ENABLE_LIMITS "ENB_LIMITS"
-
-/**
- * @brief 
- * 
- */
-#define SF_ENABLE_ESTOP "ENB_ESTOP"
-
-/**
- * @brief 
- * 
- */
-#define SF_ENABLE_WIFI_IF "ENB_WIFI_IF"
-
-/**
- * @brief 
- * 
- */
-#define SF_ENABLE_NTP "ENB_NTP"
-
-/**
- * @brief 
- * 
- */
-#define SF_ENABLE_WG "ENB_WG"
-
-/**
- * @brief 
- * 
- */
-#define SF_ENABLE_OTA "ENB_OTA"
-
-/**
- * @brief 
- * 
- */
-#define SF_ENABLE_SUPER "ENB_SUPER"
-
-/**
- * @brief 
- * 
- */
-#define SF_ENABLE_TCM "ENB_TCM"
-
-/**
- * @brief 
- * 
- */
-#define SF_ENABLE_WDT "ENB_WDT"
-
-#define ENABLE_MOTORS_IO 1
-
-#define ENABLE_MOTORS 1
-
-#define ENABLE_LIMITS 1
-
-#define ENABLE_ESTOP 1
-
-#define ENABLE_WIFI 1
-
-#define ENABLE_MDNS 1
-
-#define ENABLE_NTP 1
-
-#define ENABLE_WG 1
-
-#define ENABLE_OTA 1
-
-#define ENABLE_SUPER 1
-
-#define ENABLE_TCM_COMMANDS 1
-
-#define ENABLE_WDT 1
-
-// #define ENABLE_STATUS_LCD
-
-// #define ENABLE_SPI_IO
-
-// #define ENABLE_SHMR
-
-#endif // defined(ENABLE_FEATURES_FLAGS)
-#pragma endregion // Features Flags
 
 #pragma region IO Pins Definitions
 #if defined(ENABLE_MOTORS_IO)
@@ -682,15 +578,40 @@ const char KEY_LEFT[3] = {0x1B, 0x5B, 0x44};
 #define CMD_FREE "FREE"
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  */
 #define CMD_HOME "HOME"
 
+#if defined(ENABLE_INTERPOLATOR)
+/**
+ * @brief Interpolated joint move command.
+ *
+ */
+#define CMD_MOVEJ "@MOVEJ"
 
 /**
- * @brief 
- * 
+ * @brief Arguments for MOVEJ command (6 joint positions).
+ *
+ */
+#define MOVEJ_ARGS "dddddd"
+
+/**
+ * @brief Inverse kinematics move command.
+ * Arguments: X, Y, Z (mm), Pitch, Roll (degrees), Gripper (steps)
+ */
+#define CMD_MOVEIK "@MOVEIK"
+
+/**
+ * @brief Arguments for MOVEIK command (X, Y, Z, Pitch, Roll, Gripper).
+ *
+ */
+#define MOVEIK_ARGS "dddddd"
+#endif // defined(ENABLE_INTERPOLATOR)
+
+/**
+ * @brief
+ *
  */
 #define NO_ARGS ""
 
@@ -774,8 +695,6 @@ A0 A1 A2
 #endif // #if !defined(I2C_TIMEOUT_MS)
 #endif // defined(ENABLE_STATUS_LCD)
 #pragma endregion
-
-
 
 #pragma region PS4
 #if defined(ENABLE_PS4)
