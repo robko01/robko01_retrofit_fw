@@ -67,6 +67,8 @@
 
 // #define ENABLE_SHMR
 
+// #define ENABLE_INTERPOLATOR
+
 #define SHOW_FUNC_NAMES
 
 #pragma endregion // Options
@@ -576,15 +578,40 @@ const char KEY_LEFT[3] = {0x1B, 0x5B, 0x44};
 #define CMD_FREE "FREE"
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  */
 #define CMD_HOME "HOME"
 
+#if defined(ENABLE_INTERPOLATOR)
+/**
+ * @brief Interpolated joint move command.
+ *
+ */
+#define CMD_MOVEJ "@MOVEJ"
 
 /**
- * @brief 
- * 
+ * @brief Arguments for MOVEJ command (6 joint positions).
+ *
+ */
+#define MOVEJ_ARGS "dddddd"
+
+/**
+ * @brief Inverse kinematics move command.
+ * Arguments: X, Y, Z (mm), Pitch, Roll (degrees), Gripper (steps)
+ */
+#define CMD_MOVEIK "@MOVEIK"
+
+/**
+ * @brief Arguments for MOVEIK command (X, Y, Z, Pitch, Roll, Gripper).
+ *
+ */
+#define MOVEIK_ARGS "dddddd"
+#endif // defined(ENABLE_INTERPOLATOR)
+
+/**
+ * @brief
+ *
  */
 #define NO_ARGS ""
 

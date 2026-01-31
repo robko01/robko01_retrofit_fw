@@ -61,8 +61,12 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/ - Commented out: conflicts with PlatformIO lib folder
+# lib/
 lib64/
+
+# But keep PlatformIO lib folder tracked
+!lib/
 parts/
 sdist/
 var/
@@ -247,3 +251,8 @@ pip-selfcheck.json
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/platformio,visualstudiocode,dotenv,venv,python,c++
+
+### PlatformIO lib folder ###
+# Override Python's lib/ ignore - PlatformIO needs the lib folder for project libraries
+!lib/
+!lib/**

@@ -97,9 +97,9 @@
 #include "JointPositionUnion.h"
 #endif // defined(ENABLE_MOTORS) || defined(ENABLE_SUPER) || defined(ENABLE_TCM_COMMANDS)
 
-#if defined(ENABLE_WDT) || defined(ENABLE_PS4)
+#if defined(ENABLE_WDT) || defined(ENABLE_PS4) || defined(ENABLE_INTERPOLATOR)
 #include "FxTimer.h"
-#endif // defined(ENABLE_WDT) || defined(ENABLE_PS4)
+#endif // defined(ENABLE_WDT) || defined(ENABLE_PS4) || defined(ENABLE_INTERPOLATOR)
 
 #if defined(ENABLE_STATUS_LCD)
 #include "freertos/FreeRTOS.h"
@@ -116,6 +116,11 @@
 #if defined(ENABLE_PS4)
 #include <PS4Controller.h>
 #endif // defined(ENABLE_PS4)
+
+#if defined(ENABLE_INTERPOLATOR)
+#include "JointInterpolator.h"
+#include "RobotKinematics.h"
+#endif // defined(ENABLE_INTERPOLATOR)
 
 #pragma endregion // Headers
 
@@ -136,6 +141,7 @@ enum OperationModes : uint8_t
   NONE = 0U,
   Positioning,
   Speed,
+  Interpolated,
 };
 
 #pragma endregion // Enums
@@ -347,7 +353,39 @@ void cmd_set(CommandParser_t::Argument *args, char *response);
  * @param response
  */
 void cmd_step(CommandParser_t::Argument *args, char *response);
+
+#if defined(ENABLE_INTERPOLATOR)
+/**
+ * @brief TCM command handler for @MOVEJ command.
+ *
+ * @param args Command arguments (6 joint positions)
+ * @param response Response buffer
+ */
+void cmd_movej(CommandParser_t::Argument *args, char *response);
+
+/**
+ * @brief TCM command handler for @MOVEIK command.
+ *
+ * @param args Command arguments (X, Y, Z, Pitch, Roll, Gripper)
+ * @param response Response buffer
+ */
+void cmd_moveik(CommandParser_t::Argument *args, char *response);
+#endif // defined(ENABLE_INTERPOLATOR)
 #endif // defined(ENABLE_TCM_COMMANDS)
+
+#if defined(ENABLE_INTERPOLATOR)
+/**
+ * @brief Initialize the joint interpolator.
+ *
+ */
+void init_interpolator();
+
+/**
+ * @brief Update the interpolator - call from main loop.
+ *
+ */
+void update_interpolator();
+#endif // defined(ENABLE_INTERPOLATOR)
 
 #if defined(ENABLE_WDT)
 /**
@@ -709,6 +747,38 @@ uint32_t PS4SleepCounter_g;
 #endif // defined(ENABLE_SLEEP_MODE)
 #endif // defined(ENABLE_PS4)
 
+#if defined(ENABLE_INTERPOLATOR)
+/**
+ * @brief Joint interpolator instance.
+ *
+ */
+JointInterpolator Interpolator_g;
+
+/**
+ * @brief Interpolated position buffer.
+ *
+ */
+long InterpolatedPositions_g[INTERP_NUM_JOINTS];
+
+/**
+ * @brief Timer for interpolation updates.
+ *
+ */
+FxTimer *InterpolatorTimer_g;
+
+/**
+ * @brief Robot kinematics instance.
+ *
+ */
+RobotKinematics Kinematics_g;
+
+/**
+ * @brief Steps per radian conversion factors for each joint.
+ * These values should be calibrated for the actual robot.
+ */
+float StepsPerRad_g[IK_NUM_JOINTS] = {100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f};
+#endif // defined(ENABLE_INTERPOLATOR)
+
 #pragma endregion // Variables
 
 /**
@@ -774,6 +844,10 @@ void setup()
 #if defined(ENABLE_TCM_COMMANDS)
   init_tcm_commands();
 #endif // defined(ENABLE_TCM_COMMANDS)
+
+#if defined(ENABLE_INTERPOLATOR)
+  init_interpolator();
+#endif // defined(ENABLE_INTERPOLATOR)
 
 #if defined(ENABLE_WDT)
   init_wdt();
@@ -842,6 +916,10 @@ void loop()
     // Robko01.update();
     // MotorState_g = Robko01.get_motor_state();
     update_drivers();
+
+#if defined(ENABLE_INTERPOLATOR)
+    update_interpolator();
+#endif // defined(ENABLE_INTERPOLATOR)
   }
 
   if (MotorState_g == 0 && StorePosition_g)
@@ -2401,6 +2479,10 @@ if (!EnableTCM_g)
   CommandParser_g.registerCommand(CMD_RESET, NO_ARGS, &cmd_reset);
   CommandParser_g.registerCommand(CMD_SET, SET_ARGS, &cmd_set);
   CommandParser_g.registerCommand(CMD_STEP, STEP_ARGS, &cmd_step);
+#if defined(ENABLE_INTERPOLATOR)
+  CommandParser_g.registerCommand(CMD_MOVEJ, MOVEJ_ARGS, &cmd_movej);
+  CommandParser_g.registerCommand(CMD_MOVEIK, MOVEIK_ARGS, &cmd_moveik);
+#endif // defined(ENABLE_INTERPOLATOR)
 }
 
 /**
@@ -2893,7 +2975,299 @@ if (!EnableTCM_g)
            "\r\nOK\r\n");
   // DEBUGLOG("DOs %d\r\n", (int32_t)args[7].asDouble);
 }
+
+#if defined(ENABLE_INTERPOLATOR)
+/**
+ * @brief TCM command handler for @MOVEJ command.
+ *
+ * @param args Command arguments (6 joint positions)
+ * @param response Response buffer
+ */
+void cmd_movej(CommandParser_t::Argument *args, char *response)
+{
+#if defined(SHOW_FUNC_NAMES_S)
+  DEBUGLOG("\r\n");
+  DEBUGLOG(__PRETTY_FUNCTION__);
+  DEBUGLOG("\r\n");
+#endif // SHOW_FUNC_NAMES
+
+#if defined(ENABLE_FEATURES_FLAGS)
+  if (!EnableTCM_g)
+  {
+    DEBUGLOG("Cancel execution: %s\r\n", __PRETTY_FUNCTION__);
+    return;
+  }
+#endif // defined(ENABLE_FEATURES_FLAGS)
+
+  DEBUGLOG("@MOVEJ J1:%d J2:%d J3:%d J4:%d J5:%d J6:%d\r\n",
+           (int32_t)args[0].asDouble,
+           (int32_t)args[1].asDouble,
+           (int32_t)args[2].asDouble,
+           (int32_t)args[3].asDouble,
+           (int32_t)args[4].asDouble,
+           (int32_t)args[5].asDouble);
+
+#if defined(ENABLE_MOTORS)
+  // Get current positions from steppers
+  long currentPositions[INTERP_NUM_JOINTS] = {
+      stepper1.currentPosition(),
+      stepper2.currentPosition(),
+      stepper3.currentPosition(),
+      stepper4.currentPosition(),
+      stepper5.currentPosition(),
+      stepper6.currentPosition()};
+
+  // Get target positions from command arguments
+  long targetPositions[INTERP_NUM_JOINTS] = {
+      (long)args[0].asDouble,
+      (long)args[1].asDouble,
+      (long)args[2].asDouble,
+      (long)args[3].asDouble,
+      (long)args[4].asDouble,
+      (long)args[5].asDouble};
+
+  // Configure steppers for fast response to interpolated position updates
+  // Use higher max speed so steppers can keep up with interpolation
+  stepper1.setMaxSpeed(M1_MAX_SPEED * 2);
+  stepper2.setMaxSpeed(M2_MAX_SPEED * 2);
+  stepper3.setMaxSpeed(M3_MAX_SPEED * 2);
+  stepper4.setMaxSpeed(M4_MAX_SPEED * 2);
+  stepper5.setMaxSpeed(M5_MAX_SPEED * 2);
+  stepper6.setMaxSpeed(M6_MAX_SPEED * 2);
+
+  // Start interpolated motion
+  if (Interpolator_g.startMotion(currentPositions, targetPositions))
+  {
+    OperationMode_g = OperationModes::Interpolated;
+    enable_drivers(true);
+
+#if defined(ENABLE_WDT)
+    feed_wdt();
+#endif // ENABLE_WDT
+
+    snprintf(response,
+             CommandParser_t::MAX_RESPONSE_SIZE,
+             "\r\nOK DUR:%lu\r\n",
+             Interpolator_g.getDuration());
+  }
+  else
+  {
+    snprintf(response,
+             CommandParser_t::MAX_RESPONSE_SIZE,
+             "\r\nERR:INTERP_FAIL\r\n");
+  }
+#else
+  snprintf(response,
+           CommandParser_t::MAX_RESPONSE_SIZE,
+           "\r\nERR:NO_MOTORS\r\n");
+#endif // defined(ENABLE_MOTORS)
+}
+
+/**
+ * @brief TCM command handler for @MOVEIK command.
+ * Performs inverse kinematics and interpolated motion to Cartesian target.
+ *
+ * @param args Command arguments (X, Y, Z, Pitch, Roll, Gripper)
+ * @param response Response buffer
+ */
+void cmd_moveik(CommandParser_t::Argument *args, char *response)
+{
+#if defined(SHOW_FUNC_NAMES_S)
+  DEBUGLOG("\r\n");
+  DEBUGLOG(__PRETTY_FUNCTION__);
+  DEBUGLOG("\r\n");
+#endif // SHOW_FUNC_NAMES
+
+#if defined(ENABLE_FEATURES_FLAGS)
+  if (!EnableTCM_g)
+  {
+    DEBUGLOG("Cancel execution: %s\r\n", __PRETTY_FUNCTION__);
+    return;
+  }
+#endif // defined(ENABLE_FEATURES_FLAGS)
+
+  // Extract Cartesian coordinates from command arguments
+  float xL = (float)args[0].asDouble;
+  float yL = (float)args[1].asDouble;
+  float zL = (float)args[2].asDouble;
+  float pitchL = (float)args[3].asDouble;
+  float rollL = (float)args[4].asDouble;
+  float gripperL = (float)args[5].asDouble;
+
+  DEBUGLOG("@MOVEIK X:%.1f Y:%.1f Z:%.1f P:%.1f R:%.1f G:%.1f\r\n",
+           xL, yL, zL, pitchL, rollL, gripperL);
+
+#if defined(ENABLE_MOTORS)
+  // Solve inverse kinematics
+  long targetPositions[IK_NUM_JOINTS];
+  int ikResultL = Kinematics_g.solve(xL, yL, zL, pitchL, rollL, gripperL, targetPositions);
+
+  if (ikResultL != IK_OK)
+  {
+    // IK failed - report error
+    const char *errorMsgL = "UNKNOWN";
+    switch (ikResultL)
+    {
+    case IK_ERR_UNREACHABLE:
+      errorMsgL = "UNREACHABLE";
+      break;
+    case IK_ERR_JOINT_LIMIT:
+      errorMsgL = "JOINT_LIMIT";
+      break;
+    case IK_ERR_INVALID_INPUT:
+      errorMsgL = "INVALID_INPUT";
+      break;
+    }
+    snprintf(response,
+             CommandParser_t::MAX_RESPONSE_SIZE,
+             "\r\nERR:%s\r\n", errorMsgL);
+    return;
+  }
+
+  // Log computed joint positions
+  DEBUGLOG("IK solution: J1:%ld J2:%ld J3:%ld J4:%ld J5:%ld J6:%ld\r\n",
+           targetPositions[0], targetPositions[1], targetPositions[2],
+           targetPositions[3], targetPositions[4], targetPositions[5]);
+
+  // Get current positions from steppers
+  long currentPositions[IK_NUM_JOINTS] = {
+      stepper1.currentPosition(),
+      stepper2.currentPosition(),
+      stepper3.currentPosition(),
+      stepper4.currentPosition(),
+      stepper5.currentPosition(),
+      stepper6.currentPosition()};
+
+  // Configure steppers for fast response to interpolated position updates
+  stepper1.setMaxSpeed(M1_MAX_SPEED * 2);
+  stepper2.setMaxSpeed(M2_MAX_SPEED * 2);
+  stepper3.setMaxSpeed(M3_MAX_SPEED * 2);
+  stepper4.setMaxSpeed(M4_MAX_SPEED * 2);
+  stepper5.setMaxSpeed(M5_MAX_SPEED * 2);
+  stepper6.setMaxSpeed(M6_MAX_SPEED * 2);
+
+  // Start interpolated motion
+  if (Interpolator_g.startMotion(currentPositions, targetPositions))
+  {
+    OperationMode_g = OperationModes::Interpolated;
+    enable_drivers(true);
+
+#if defined(ENABLE_WDT)
+    feed_wdt();
+#endif // ENABLE_WDT
+
+    snprintf(response,
+             CommandParser_t::MAX_RESPONSE_SIZE,
+             "\r\nOK DUR:%lu\r\n",
+             Interpolator_g.getDuration());
+  }
+  else
+  {
+    snprintf(response,
+             CommandParser_t::MAX_RESPONSE_SIZE,
+             "\r\nERR:INTERP_FAIL\r\n");
+  }
+#else
+  snprintf(response,
+           CommandParser_t::MAX_RESPONSE_SIZE,
+           "\r\nERR:NO_MOTORS\r\n");
+#endif // defined(ENABLE_MOTORS)
+}
+#endif // defined(ENABLE_INTERPOLATOR)
 #endif // defined(ENABLE_TCM_COMMANDS)
+
+#if defined(ENABLE_INTERPOLATOR)
+/**
+ * @brief Initialize the joint interpolator.
+ *
+ */
+void init_interpolator()
+{
+#if defined(SHOW_FUNC_NAMES)
+  DEBUGLOG("\r\n");
+  DEBUGLOG(__PRETTY_FUNCTION__);
+  DEBUGLOG("\r\n");
+#endif // SHOW_FUNC_NAMES
+
+#if defined(ENABLE_STATUS_LCD)
+  sprintf(LCDFirstLine_g, __FUNCTION__);
+  draw_lcd();
+#endif // defined(ENABLE_STATUS_LCD)
+
+  // Set up per-joint velocity and acceleration limits
+  float maxVelocities[INTERP_NUM_JOINTS] = {
+      (float)M1_MAX_SPEED, (float)M2_MAX_SPEED, (float)M3_MAX_SPEED,
+      (float)M4_MAX_SPEED, (float)M5_MAX_SPEED, (float)M6_MAX_SPEED};
+  float maxAccelerations[INTERP_NUM_JOINTS] = {
+      (float)M1_ACCEL, (float)M2_ACCEL, (float)M3_ACCEL,
+      (float)M4_ACCEL, (float)M5_ACCEL, (float)M6_ACCEL};
+
+  Interpolator_g.init(maxVelocities, maxAccelerations);
+
+  // Create interpolation update timer
+  InterpolatorTimer_g = new FxTimer();
+  InterpolatorTimer_g->setExpirationTime(INTERP_TIME_STEP_MS);
+  InterpolatorTimer_g->updateLastTime();
+
+  DEBUGLOG("Interpolator initialized with %dms time step\r\n", INTERP_TIME_STEP_MS);
+
+  // Initialize inverse kinematics module
+  Kinematics_g.init(StepsPerRad_g);
+  DEBUGLOG("Kinematics initialized\r\n");
+}
+
+/**
+ * @brief Update the interpolator - call from main loop.
+ *
+ */
+void update_interpolator()
+{
+#if defined(SHOW_FUNC_NAMES_S)
+  DEBUGLOG("\r\n");
+  DEBUGLOG(__PRETTY_FUNCTION__);
+  DEBUGLOG("\r\n");
+#endif // SHOW_FUNC_NAMES
+
+  // Only process if in interpolated mode
+  if (OperationMode_g != OperationModes::Interpolated)
+  {
+    return;
+  }
+
+  // Check if interpolator is still active
+  if (!Interpolator_g.isActive())
+  {
+    if (Interpolator_g.isComplete())
+    {
+      // Motion finished - switch back to positioning mode for final settling
+      OperationMode_g = OperationModes::Positioning;
+      DEBUGLOG("Interpolated motion complete\r\n");
+    }
+    return;
+  }
+
+  // Check timer for update interval
+  InterpolatorTimer_g->update();
+  if (!InterpolatorTimer_g->expired())
+  {
+    return;
+  }
+  InterpolatorTimer_g->updateLastTime();
+  InterpolatorTimer_g->clear();
+
+  // Update interpolator and get new positions
+  if (Interpolator_g.update(InterpolatedPositions_g))
+  {
+    // Set new target positions for all steppers
+    stepper1.moveTo(InterpolatedPositions_g[0]);
+    stepper2.moveTo(InterpolatedPositions_g[1]);
+    stepper3.moveTo(InterpolatedPositions_g[2]);
+    stepper4.moveTo(InterpolatedPositions_g[3]);
+    stepper5.moveTo(InterpolatedPositions_g[4]);
+    stepper6.moveTo(InterpolatedPositions_g[5]);
+  }
+}
+#endif // defined(ENABLE_INTERPOLATOR)
 
 #if defined(ENABLE_WDT)
 /**
