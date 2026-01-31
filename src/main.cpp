@@ -128,6 +128,15 @@
 #include "RobotKinematics.h"
 #endif // defined(ENABLE_INTERPOLATOR)
 
+#if defined(ENABLE_MODBUS)
+#if defined(MODBUS_TCP)
+#include "ModbusServerTCPasync.h"
+#endif // defined(MODBUS_TCP)
+#if defined(MODBUS_RTU)
+#include "ModbusServerRTU.h"
+#endif // defined(MODBUS_RTU)
+#endif // defined(ENABLE_MODBUS)
+
 #pragma endregion // Headers
 
 #pragma region Types
@@ -438,16 +447,48 @@ void task_lcd(void *parameter);
 #if defined(ENABLE_PS4)
 /**
  * @brief Initialize PS4 host controller.
- * 
+ *
  */
 void init_ps4();
 
 /**
  * @brief Update PS4 process.
- * 
+ *
  */
 void update_ps4();
 #endif // defined(ENABLE_PS4)
+
+#if defined(ENABLE_MODBUS)
+/**
+ * @brief Initialize the Modbus server.
+ *
+ */
+void init_modbus();
+
+/**
+ * @brief Callback for reading holding registers.
+ *
+ * @param request Modbus request message.
+ * @return ModbusMessage Response message.
+ */
+ModbusMessage cb_modbus_read_holding(ModbusMessage request);
+
+/**
+ * @brief Callback for writing single holding register.
+ *
+ * @param request Modbus request message.
+ * @return ModbusMessage Response message.
+ */
+ModbusMessage cb_modbus_write_holding(ModbusMessage request);
+
+/**
+ * @brief Callback for writing multiple holding registers.
+ *
+ * @param request Modbus request message.
+ * @return ModbusMessage Response message.
+ */
+ModbusMessage cb_modbus_write_multiple(ModbusMessage request);
+#endif // defined(ENABLE_MODBUS)
 
 #pragma endregion // Prototypes
 
@@ -785,6 +826,24 @@ RobotKinematics Kinematics_g;
 float StepsPerRad_g[IK_NUM_JOINTS] = {100.0f, 100.0f, 100.0f, 100.0f, 100.0f, 100.0f};
 #endif // defined(ENABLE_INTERPOLATOR)
 
+#if defined(ENABLE_MODBUS)
+#if defined(MODBUS_TCP)
+/**
+ * @brief Modbus TCP async server instance.
+ *
+ */
+ModbusServerTCPasync ModbusTCP_g;
+#endif // defined(MODBUS_TCP)
+
+#if defined(MODBUS_RTU)
+/**
+ * @brief Modbus RTU server instance.
+ *
+ */
+ModbusServerRTU ModbusRTU_g(MODBUS_RTU_TIMEOUT_MS);
+#endif // defined(MODBUS_RTU)
+#endif // defined(ENABLE_MODBUS)
+
 #pragma endregion // Variables
 
 /**
@@ -875,8 +934,12 @@ void setup()
   init_ps4();
 #endif // defined(ENABLE_PS4)
 
+#if defined(ENABLE_MODBUS)
+  init_modbus();
+#endif // defined(ENABLE_MODBUS)
+
 #if defined(ENABLE_STATUS_LCD)
-  // Create the LCD task. 
+  // Create the LCD task.
   xTaskCreate(task_lcd, "task_lcd", 2048, NULL, 2, NULL);
 #endif // defined(ENABLE_STATUS_LCD)
 }
@@ -4012,4 +4075,390 @@ void update_ps4()
   }
 }
 #endif // defined(ENABLE_PS4)
+
+#if defined(ENABLE_MODBUS)
+/**
+ * @brief Check if robot is currently busy (motors moving).
+ *
+ * @return true Robot is busy.
+ * @return false Robot is idle.
+ */
+bool is_robot_busy()
+{
+#if defined(ENABLE_MOTORS)
+  return MotorState_g != 0;
+#else
+  return false;
+#endif
+}
+
+/**
+ * @brief Initialize the Modbus server(s).
+ *
+ */
+void init_modbus()
+{
+#if defined(SHOW_FUNC_NAMES)
+  DEBUGLOG("\r\n");
+  DEBUGLOG(__PRETTY_FUNCTION__);
+  DEBUGLOG("\r\n");
+#endif // SHOW_FUNC_NAMES
+
+#if defined(ENABLE_STATUS_LCD)
+  sprintf(LCDFirstLine_g, __FUNCTION__);
+  draw_lcd();
+#endif // defined(ENABLE_STATUS_LCD)
+
+#if defined(MODBUS_TCP)
+  // Register holding register callbacks
+  ModbusTCP_g.registerWorker(MODBUS_SLAVE_ID, READ_HOLD_REGISTER, &cb_modbus_read_holding);
+  ModbusTCP_g.registerWorker(MODBUS_SLAVE_ID, WRITE_HOLD_REGISTER, &cb_modbus_write_holding);
+  ModbusTCP_g.registerWorker(MODBUS_SLAVE_ID, WRITE_MULT_REGISTERS, &cb_modbus_write_multiple);
+
+  // Start TCP server
+  ModbusTCP_g.start(MODBUS_TCP_PORT, MODBUS_TCP_MAX_CLIENTS, MODBUS_TCP_TIMEOUT_MS);
+  DEBUGLOG("Modbus TCP server started on port %d\r\n", MODBUS_TCP_PORT);
+#endif // defined(MODBUS_TCP)
+
+#if defined(MODBUS_RTU)
+  // Configure main Serial port for RTU (overrides debug output)
+  Serial.begin(MODBUS_RTU_BAUDRATE, SERIAL_8N1);
+
+  // Register callbacks
+  ModbusRTU_g.registerWorker(MODBUS_SLAVE_ID, READ_HOLD_REGISTER, &cb_modbus_read_holding);
+  ModbusRTU_g.registerWorker(MODBUS_SLAVE_ID, WRITE_HOLD_REGISTER, &cb_modbus_write_holding);
+  ModbusRTU_g.registerWorker(MODBUS_SLAVE_ID, WRITE_MULT_REGISTERS, &cb_modbus_write_multiple);
+
+  // Start RTU server on main Serial port
+  ModbusRTU_g.begin(Serial);
+  // Note: Debug output is disabled when using Modbus RTU on main UART
+#endif // defined(MODBUS_RTU)
+}
+
+/**
+ * @brief Get stepper current position by index.
+ *
+ * @param index Joint index (0-5).
+ * @return long Current position.
+ */
+long get_stepper_position(uint8_t index)
+{
+#if defined(ENABLE_MOTORS)
+  switch (index)
+  {
+    case 0: return stepper1.currentPosition();
+    case 1: return stepper2.currentPosition();
+    case 2: return stepper3.currentPosition();
+    case 3: return stepper4.currentPosition();
+    case 4: return stepper5.currentPosition();
+    case 5: return stepper6.currentPosition();
+    default: return 0;
+  }
+#else
+  return 0;
+#endif
+}
+
+/**
+ * @brief Get stepper target position by index.
+ *
+ * @param index Joint index (0-5).
+ * @return long Target position.
+ */
+long get_stepper_target(uint8_t index)
+{
+#if defined(ENABLE_MOTORS)
+  switch (index)
+  {
+    case 0: return stepper1.targetPosition();
+    case 1: return stepper2.targetPosition();
+    case 2: return stepper3.targetPosition();
+    case 3: return stepper4.targetPosition();
+    case 4: return stepper5.targetPosition();
+    case 5: return stepper6.targetPosition();
+    default: return 0;
+  }
+#else
+  return 0;
+#endif
+}
+
+/**
+ * @brief Get stepper max speed by index.
+ *
+ * @param index Joint index (0-5).
+ * @return float Max speed.
+ */
+float get_stepper_max_speed(uint8_t index)
+{
+#if defined(ENABLE_MOTORS)
+  switch (index)
+  {
+    case 0: return stepper1.maxSpeed();
+    case 1: return stepper2.maxSpeed();
+    case 2: return stepper3.maxSpeed();
+    case 3: return stepper4.maxSpeed();
+    case 4: return stepper5.maxSpeed();
+    case 5: return stepper6.maxSpeed();
+    default: return 0;
+  }
+#else
+  return 0;
+#endif
+}
+
+/**
+ * @brief Set stepper target position by index.
+ *
+ * @param index Joint index (0-5).
+ * @param position Target position.
+ */
+void set_stepper_target(uint8_t index, long position)
+{
+#if defined(ENABLE_MOTORS)
+  switch (index)
+  {
+    case 0: stepper1.moveTo(position); break;
+    case 1: stepper2.moveTo(position); break;
+    case 2: stepper3.moveTo(position); break;
+    case 3: stepper4.moveTo(position); break;
+    case 4: stepper5.moveTo(position); break;
+    case 5: stepper6.moveTo(position); break;
+  }
+#endif
+}
+
+/**
+ * @brief Set stepper max speed by index.
+ *
+ * @param index Joint index (0-5).
+ * @param speed Max speed.
+ */
+void set_stepper_max_speed(uint8_t index, float speed)
+{
+#if defined(ENABLE_MOTORS)
+  switch (index)
+  {
+    case 0: stepper1.setMaxSpeed(speed); break;
+    case 1: stepper2.setMaxSpeed(speed); break;
+    case 2: stepper3.setMaxSpeed(speed); break;
+    case 3: stepper4.setMaxSpeed(speed); break;
+    case 4: stepper5.setMaxSpeed(speed); break;
+    case 5: stepper6.setMaxSpeed(speed); break;
+  }
+#endif
+}
+
+/**
+ * @brief Stop all steppers.
+ *
+ */
+void stop_all_steppers()
+{
+#if defined(ENABLE_MOTORS)
+  stepper1.stop();
+  stepper2.stop();
+  stepper3.stop();
+  stepper4.stop();
+  stepper5.stop();
+  stepper6.stop();
+#endif
+}
+
+/**
+ * @brief Callback for reading holding registers.
+ *
+ * Register Map:
+ * 0-5   : Current Position J1-J6 (Read)
+ * 6-11  : Target Position J1-J6 (Read/Write)
+ * 12    : Motors Enabled (Read/Write)
+ * 13    : Robot Busy Status (Read)
+ * 14-19 : Max Speed J1-J6 (Read/Write)
+ * 20    : Start Motion Command (Write)
+ * 21    : Stop Motion Command (Write)
+ *
+ * @param request Modbus request message.
+ * @return ModbusMessage Response message.
+ */
+ModbusMessage cb_modbus_read_holding(ModbusMessage request)
+{
+  ModbusMessage response;
+  uint16_t address = 0;
+  uint16_t words = 0;
+
+  // Get start address and number of words from request
+  request.get(2, address);
+  request.get(4, words);
+
+  // Build response header
+  response.add(request.getServerID(), request.getFunctionCode(), (uint8_t)(words * 2));
+
+  // Read each requested register
+  for (uint16_t i = 0; i < words; i++)
+  {
+    uint16_t reg_addr = address + i;
+    uint16_t value = 0;
+
+    if (reg_addr <= 5)
+    {
+      // Current positions J1-J6 (registers 0-5)
+      value = (uint16_t)((int16_t)get_stepper_position(reg_addr));
+    }
+    else if (reg_addr <= 11)
+    {
+      // Target positions J1-J6 (registers 6-11)
+      value = (uint16_t)((int16_t)get_stepper_target(reg_addr - 6));
+    }
+    else if (reg_addr == 12)
+    {
+      // Motors enabled status (register 12)
+#if defined(ENABLE_MOTORS)
+      value = MotorsEnabled_g ? 1 : 0;
+#endif
+    }
+    else if (reg_addr == 13)
+    {
+      // Robot busy status (register 13)
+      value = is_robot_busy() ? 1 : 0;
+    }
+    else if (reg_addr <= 19)
+    {
+      // Max speed J1-J6 (registers 14-19)
+      value = (uint16_t)get_stepper_max_speed(reg_addr - 14);
+    }
+
+    response.add(value);
+  }
+
+  return response;
+}
+
+/**
+ * @brief Callback for writing single holding register.
+ *
+ * @param request Modbus request message.
+ * @return ModbusMessage Response message.
+ */
+ModbusMessage cb_modbus_write_holding(ModbusMessage request)
+{
+  ModbusMessage response;
+  uint16_t address = 0;
+  uint16_t value = 0;
+
+  // Get address and value from request
+  request.get(2, address);
+  request.get(4, value);
+
+  // Process write based on register address
+  if (address >= 6 && address <= 11)
+  {
+    // Target positions J1-J6 (registers 6-11)
+    int16_t position = (int16_t)value;
+    set_stepper_target(address - 6, position);
+#if defined(ENABLE_MOTORS)
+    OperationMode_g = OperationModes::Positioning;
+#endif
+  }
+  else if (address == 12)
+  {
+    // Motors enable control (register 12)
+#if defined(ENABLE_MOTORS_IO)
+    enable_drivers(value != 0);
+#endif
+  }
+  else if (address >= 14 && address <= 19)
+  {
+    // Max speed J1-J6 (registers 14-19)
+    set_stepper_max_speed(address - 14, (float)value);
+  }
+  else if (address == 20)
+  {
+    // Start motion command (register 20)
+#if defined(ENABLE_INTERPOLATOR)
+    if (value != 0)
+    {
+      // Start interpolated motion with current and target positions
+      long currentPos[6];
+      long targets[6];
+      for (int i = 0; i < 6; i++)
+      {
+        currentPos[i] = get_stepper_position(i);
+        targets[i] = get_stepper_target(i);
+      }
+      Interpolator_g.startMotion(currentPos, targets);
+      OperationMode_g = OperationModes::Interpolated;
+    }
+#endif
+  }
+  else if (address == 21)
+  {
+    // Stop motion command (register 21)
+    if (value != 0)
+    {
+      stop_all_steppers();
+#if defined(ENABLE_MOTORS)
+      OperationMode_g = OperationModes::NONE;
+#endif
+    }
+  }
+
+  // Echo back the request for standard response
+  response.add(request.getServerID(), request.getFunctionCode());
+  response.add(address);
+  response.add(value);
+
+  return response;
+}
+
+/**
+ * @brief Callback for writing multiple holding registers.
+ *
+ * @param request Modbus request message.
+ * @return ModbusMessage Response message.
+ */
+ModbusMessage cb_modbus_write_multiple(ModbusMessage request)
+{
+  ModbusMessage response;
+  uint16_t address = 0;
+  uint16_t numRegs = 0;
+  uint8_t byteCount = 0;
+
+  // Get start address, number of registers, and byte count
+  request.get(2, address);
+  request.get(4, numRegs);
+  request.get(6, byteCount);
+
+  // Write each register
+  for (uint16_t i = 0; i < numRegs; i++)
+  {
+    uint16_t value = 0;
+    request.get(7 + (i * 2), value);
+    uint16_t reg_addr = address + i;
+
+    if (reg_addr >= 6 && reg_addr <= 11)
+    {
+      // Target positions J1-J6
+      int16_t position = (int16_t)value;
+      set_stepper_target(reg_addr - 6, position);
+    }
+    else if (reg_addr >= 14 && reg_addr <= 19)
+    {
+      // Max speed J1-J6
+      set_stepper_max_speed(reg_addr - 14, (float)value);
+    }
+  }
+
+#if defined(ENABLE_MOTORS)
+  OperationMode_g = OperationModes::Positioning;
+#endif
+
+  // Standard response: echo address and quantity
+  response.add(request.getServerID(), request.getFunctionCode());
+  response.add(address);
+  response.add(numRegs);
+
+  return response;
+}
+#endif // defined(ENABLE_MODBUS)
+
 #pragma endregion // Functions
