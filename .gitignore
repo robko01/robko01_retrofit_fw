@@ -253,8 +253,12 @@ pip-selfcheck.json
 
 # End of https://www.toptal.com/developers/gitignore/api/platformio,visualstudiocode,dotenv,venv,python,c++
 
-### PlatformIO lib folder ###
+### PlatformIO folders ###
 # Override Python's lib/ ignore - PlatformIO needs the lib folder for project libraries
 !lib/
 !lib/**
 lib/EnvDump/EnvDumpConfig.h
+
+# Override Python's include/ ignore - PlatformIO needs the include folder for headers
+!include/
+!include/**
