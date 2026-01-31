@@ -37,6 +37,7 @@
 
 ### dotenv ###
 .env
+lib/EnvDump/EnvDumpConfig.h
 
 ### PlatformIO ###
 .pioenvs
