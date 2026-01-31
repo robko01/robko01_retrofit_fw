@@ -11,7 +11,7 @@ This document describes the SUPER protocol interface for the Robko 01 controller
 - **E** - Extendable
 - **R** - Robots
 
-SUPER is a lightweight binary control protocol designed for high-speed, real-time robot control. It provides a simple request-response communication model with CRC validation for data integrity.
+SUPER is a lightweight binary control protocol designed for high-speed, real-time robot control. It provides a simple request-response communication model with checksum validation for data integrity.
 
 ### Key Characteristics
 
@@ -19,7 +19,7 @@ SUPER is a lightweight binary control protocol designed for high-speed, real-tim
 |---------|-------------|
 | Type | Binary protocol (not text-based) |
 | Model | Request-response |
-| Integrity | CRC-16 validation on all frames |
+| Integrity | XOR checksum validation on all frames |
 | Transports | UDP, TCP, or Serial |
 | Max payload | 26 bytes |
 | Byte order | Little-endian |
@@ -32,10 +32,10 @@ All SUPER communication uses a fixed frame format. Both requests and responses f
 
 ```
 ┌──────────┬──────────┬────────┬────────┬─────────────┬───────────┐
-│ Sentinel │ FrameType│ Length │ OpCode │   Payload   │   CRC-16  │
+│ Sentinel │ FrameType│ Length │ OpCode │   Payload   │ Checksum  │
 │  1 byte  │  1 byte  │ 1 byte │ 1 byte │  0-26 bytes │  2 bytes  │
 └──────────┴──────────┴────────┴────────┴─────────────┴───────────┘
-     0xAA     0x01/02    N+3      0x01+     [data]      [crc_lo][crc_hi]
+     0xAA     0x01/02    N+3      0x01+     [data]      [chk0][chk1]
 ```
 
 ### Frame Fields
@@ -44,15 +44,15 @@ All SUPER communication uses a fixed frame format. Both requests and responses f
 |--------|-------|------|-------------|
 | 0 | Sentinel | 1 byte | Always `0xAA` - marks the start of a frame |
 | 1 | FrameType | 1 byte | `0x01` = Request, `0x02` = Response |
-| 2 | Length | 1 byte | Total bytes from OpCode to end of CRC (inclusive) |
+| 2 | Length | 1 byte | Total bytes from OpCode to end of Checksum (inclusive) |
 | 3 | OpCode | 1 byte | Operation code (see OpCodes section) |
 | 4 | StatusCode | 1 byte | **Response only** - status of the operation |
 | 4/5 | Payload | 0-26 bytes | Command-specific data |
-| N-2 | CRC-16 | 2 bytes | CRC of bytes from Sentinel through Payload |
+| N-2 | Checksum | 2 bytes | XOR checksum of bytes from Sentinel through Payload |
 
 ### Frame Constraints
 
-- **Minimum frame length**: 6 bytes (sentinel + type + length + opcode + crc)
+- **Minimum frame length**: 6 bytes (sentinel + type + length + opcode + checksum)
 - **Maximum frame length**: 32 bytes
 - **Maximum payload length**: 26 bytes
 
@@ -60,7 +60,7 @@ All SUPER communication uses a fixed frame format. Both requests and responses f
 
 ```
 ┌──────────┬──────────┬────────┬────────┬─────────────┬───────────┐
-│   0xAA   │   0x01   │ Length │ OpCode │   Payload   │   CRC-16  │
+│   0xAA   │   0x01   │ Length │ OpCode │   Payload   │ Checksum  │
 └──────────┴──────────┴────────┴────────┴─────────────┴───────────┘
 ```
 
@@ -70,7 +70,7 @@ Response frames include a StatusCode byte after the OpCode:
 
 ```
 ┌──────────┬──────────┬────────┬────────┬────────────┬─────────────┬───────────┐
-│   0xAA   │   0x02   │ Length │ OpCode │ StatusCode │   Payload   │   CRC-16  │
+│   0xAA   │   0x02   │ Length │ OpCode │ StatusCode │   Payload   │ Checksum  │
 └──────────┴──────────┴────────┴────────┴────────────┴─────────────┴───────────┘
 ```
 
@@ -83,9 +83,20 @@ Response frames include a StatusCode byte after the OpCode:
 | 3 | `Busy` | Robot is busy with another operation |
 | 4 | `TimeOut` | Operation timed out |
 
-### CRC Calculation
+### Checksum Calculation
 
-The protocol uses CRC-16 for frame validation. The CRC is calculated over all bytes from the Sentinel through the end of the Payload (excluding the CRC bytes themselves). The CRC is transmitted in little-endian order (low byte first).
+The protocol uses a simple XOR checksum for frame validation. The checksum consists of 2 bytes calculated over all bytes from the Sentinel through the end of the Payload (excluding the checksum bytes themselves):
+
+- **Byte 0**: XOR of all even-indexed bytes (indices 0, 2, 4, ...)
+- **Byte 1**: XOR of all odd-indexed bytes (indices 1, 3, 5, ...)
+
+```
+Frame:    [AA] [01] [03] [04]
+Index:      0    1    2    3
+
+Checksum[0] = 0xAA ^ 0x03 = 0xA9  (indices 0, 2)
+Checksum[1] = 0x01 ^ 0x04 = 0x05  (indices 1, 3)
+```
 
 ## Communication Flow
 
@@ -119,7 +130,7 @@ The receiver parses incoming bytes using this state machine:
                 ┌───────────────────────────┐ │
                 │                           ▼ ▼
            ┌────┴──┐  all bytes   ┌──────────────┐
-           │  CRC  │◄─────────────│    Data      │
+           │ Chksum│◄─────────────│    Data      │
            └───────┘   received   └──────────────┘
 ```
 
@@ -306,8 +317,8 @@ These are defined in the framework library's `OperationsCodes.h`.
 Tests connectivity. Any payload bytes sent are echoed back in the response.
 
 ```
-Request:  AA 01 04 01 [payload] [crc]
-Response: AA 02 05 01 01 [payload] [crc]
+Request:  AA 01 04 01 [payload] [chk]
+Response: AA 02 05 01 01 [payload] [chk]
                      │
                      └── StatusCode: Ok
 ```
@@ -317,8 +328,8 @@ Response: AA 02 05 01 01 [payload] [crc]
 Immediately halts all motor motion. Use in emergency situations.
 
 ```
-Request:  AA 01 03 02 [crc]
-Response: AA 02 04 02 01 [crc]
+Request:  AA 01 03 02 [chk]
+Response: AA 02 04 02 01 [chk]
 ```
 
 #### Enable/Disable (OpCodes 3, 4)
@@ -326,8 +337,8 @@ Response: AA 02 04 02 01 [crc]
 Controls the motor driver enable signal. When disabled, motors are free to move manually.
 
 ```
-Enable:  AA 01 03 04 [crc]  →  AA 02 04 04 01 [crc]
-Disable: AA 01 03 03 [crc]  →  AA 02 04 03 01 [crc]
+Enable:  AA 01 03 04 [chk]  →  AA 02 04 04 01 [chk]
+Disable: AA 01 03 03 [chk]  →  AA 02 04 03 01 [chk]
 ```
 
 #### MoveRelative (OpCode 6)
@@ -336,9 +347,9 @@ Moves each joint by a relative offset. Payload uses `JointPosition_t` structure.
 If any joint is still moving, returns `Busy` status with the busy axis index.
 
 ```
-Request:  AA 01 1B 06 [JointPosition_t: 24 bytes] [crc]
-Response: AA 02 04 06 01 [crc]           ← Success
-Response: AA 02 05 06 03 [axis] [crc]    ← Busy (axis still moving)
+Request:  AA 01 1B 06 [JointPosition_t: 24 bytes] [chk]
+Response: AA 02 04 06 01 [chk]           ← Success
+Response: AA 02 05 06 03 [axis] [chk]    ← Busy (axis still moving)
 ```
 
 #### MoveAbsolute (OpCode 7)
@@ -350,8 +361,8 @@ Moves joints to absolute step positions. Same payload format as MoveRelative.
 Returns current position of all joints in `JointPosition_t` format.
 
 ```
-Request:  AA 01 03 0B [crc]
-Response: AA 02 1C 0B 01 [JointPosition_t: 24 bytes] [crc]
+Request:  AA 01 03 0B [chk]
+Response: AA 02 1C 0B 01 [JointPosition_t: 24 bytes] [chk]
 ```
 
 #### MoveSpeed (OpCode 12)
@@ -451,7 +462,7 @@ TX: AA 01 1B 07                 (Request: MoveAbsolute)
     00 00 00 00                 (J4 Pos, Speed)
     00 00 00 00                 (J5 Pos, Speed)
     00 00 00 00                 (J6 Pos, Speed)
-    XX XX                       (CRC)
+    XX XX                       (Checksum)
 RX: AA 02 04 07 01 XX XX        (Response: Ok)
 ```
 
@@ -475,10 +486,10 @@ TX: AA 01 0F 11                 (Request: MoveInterpolated)
     00 00                       (J4 = 0)
     00 00                       (J5 = 0)
     64 00                       (J6 = 100)
-    XX XX                       (CRC)
+    XX XX                       (Checksum)
 RX: AA 02 08 11 01              (Response: Ok)
     D0 07 00 00                 (Duration = 2000ms)
-    XX XX                       (CRC)
+    XX XX                       (Checksum)
 ```
 
 ## Troubleshooting
@@ -490,7 +501,7 @@ RX: AA 02 08 11 01              (Response: Ok)
 | No response at all | SUPER not enabled | Add `-D ENABLE_SUPER=1` to build flags |
 | No response at all | Wrong transport | Verify `SUPER_UDP`, `SUPER_TCP`, or `SUPER_SERIAL` is defined |
 | No response at all | Wrong port | Check `SUPER_SERVICE_PORT` (default 10182) |
-| CRC error responses | Incorrect CRC calculation | Verify CRC-16 algorithm and byte order |
+| Checksum error responses | Incorrect checksum calculation | Verify XOR checksum algorithm |
 | Frame not recognized | Missing sentinel | Ensure frame starts with `0xAA` |
 
 ### Network Issues (UDP/TCP)
@@ -517,6 +528,255 @@ RX: AA 02 08 11 01              (Response: Ok)
 2. **Check frame parsing**: Monitor serial output for frame reception states
 3. **Verify byte order**: SUPER uses little-endian for multi-byte values
 4. **Test with Ping**: Use OpCode 1 (Ping) to verify basic communication before complex commands
+
+## Python Examples
+
+### Checksum Calculation
+
+The SUPER protocol uses a simple XOR checksum (not CRC):
+
+```python
+def checksum(data: bytes) -> bytes:
+    """Calculate XOR checksum for SUPER protocol.
+
+    Byte 0: XOR of all even-indexed bytes (0, 2, 4, ...)
+    Byte 1: XOR of all odd-indexed bytes (1, 3, 5, ...)
+    """
+    chk = [0, 0]
+    for i, byte in enumerate(data):
+        chk[i % 2] ^= byte
+    return bytes(chk)
+```
+
+### SUPER Client Class (UDP)
+
+```python
+import socket
+import struct
+
+class SUPERClient:
+    """SUPER protocol UDP client for Robko 01 robot."""
+
+    SENTINEL = 0xAA
+    REQUEST = 0x01
+    RESPONSE = 0x02
+
+    # OpCodes
+    OP_PING = 1
+    OP_STOP = 2
+    OP_DISABLE = 3
+    OP_ENABLE = 4
+    OP_CLEAR = 5
+    OP_MOVE_RELATIVE = 6
+    OP_MOVE_ABSOLUTE = 7
+    OP_DO = 8
+    OP_DI = 9
+    OP_IS_MOVING = 10
+    OP_CURRENT_POSITION = 11
+    OP_MOVE_SPEED = 12
+    OP_MOVE_INTERPOLATED = 17
+    OP_GET_INTERPOLATOR_STATE = 19
+
+    # Status codes
+    STATUS_OK = 1
+    STATUS_ERROR = 2
+    STATUS_BUSY = 3
+    STATUS_TIMEOUT = 4
+
+    def __init__(self, host: str, port: int = 10182, timeout: float = 1.0):
+        self.host = host
+        self.port = port
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.settimeout(timeout)
+
+    def _checksum(self, data: bytes) -> bytes:
+        """Calculate XOR checksum.
+
+        Byte 0: XOR of all even-indexed bytes
+        Byte 1: XOR of all odd-indexed bytes
+        """
+        chk = [0, 0]
+        for i, byte in enumerate(data):
+            chk[i % 2] ^= byte
+        return bytes(chk)
+
+    def _build_frame(self, opcode: int, payload: bytes = b'') -> bytes:
+        """Build a SUPER request frame."""
+        length = len(payload) + 3  # opcode + payload + 2 checksum bytes
+        header = bytes([self.SENTINEL, self.REQUEST, length, opcode])
+        frame_without_checksum = header + payload
+        chk = self._checksum(frame_without_checksum)
+        return frame_without_checksum + chk
+
+    def _send_receive(self, opcode: int, payload: bytes = b'') -> tuple:
+        """Send request and receive response."""
+        frame = self._build_frame(opcode, payload)
+        self.sock.sendto(frame, (self.host, self.port))
+
+        response, _ = self.sock.recvfrom(64)
+
+        # Parse response
+        if len(response) < 6 or response[0] != self.SENTINEL:
+            raise ValueError("Invalid response frame")
+
+        resp_opcode = response[3]
+        status = response[4]
+        resp_payload = response[5:-2]  # Exclude checksum
+
+        return status, resp_opcode, resp_payload
+
+    def ping(self, data: bytes = b'\x55') -> bool:
+        """Test connection."""
+        status, _, payload = self._send_receive(self.OP_PING, data)
+        return status == self.STATUS_OK and payload == data
+
+    def enable(self) -> bool:
+        """Enable motor drivers."""
+        status, _, _ = self._send_receive(self.OP_ENABLE)
+        return status == self.STATUS_OK
+
+    def disable(self) -> bool:
+        """Disable motor drivers."""
+        status, _, _ = self._send_receive(self.OP_DISABLE)
+        return status == self.STATUS_OK
+
+    def stop(self) -> bool:
+        """Emergency stop."""
+        status, _, _ = self._send_receive(self.OP_STOP)
+        return status == self.STATUS_OK
+
+    def clear(self) -> bool:
+        """Reset position counters to zero."""
+        status, _, _ = self._send_receive(self.OP_CLEAR)
+        return status == self.STATUS_OK
+
+    def is_moving(self) -> bool:
+        """Check if robot is in motion."""
+        status, _, payload = self._send_receive(self.OP_IS_MOVING)
+        if status == self.STATUS_OK and len(payload) >= 1:
+            return payload[0] == 1
+        return False
+
+    def get_position(self) -> dict:
+        """Get current joint positions."""
+        status, _, payload = self._send_receive(self.OP_CURRENT_POSITION)
+        if status == self.STATUS_OK and len(payload) >= 24:
+            values = struct.unpack('<6h6h', payload[:24])
+            return {
+                'j1': {'pos': values[0], 'speed': values[1]},
+                'j2': {'pos': values[2], 'speed': values[3]},
+                'j3': {'pos': values[4], 'speed': values[5]},
+                'j4': {'pos': values[6], 'speed': values[7]},
+                'j5': {'pos': values[8], 'speed': values[9]},
+                'j6': {'pos': values[10], 'speed': values[11]},
+            }
+        return None
+
+    def move_absolute(self, j1=0, j2=0, j3=0, j4=0, j5=0, j6=0,
+                      s1=100, s2=100, s3=100, s4=100, s5=100, s6=100) -> bool:
+        """Move to absolute positions."""
+        payload = struct.pack('<12h', j1, s1, j2, s2, j3, s3, j4, s4, j5, s5, j6, s6)
+        status, _, _ = self._send_receive(self.OP_MOVE_ABSOLUTE, payload)
+        return status == self.STATUS_OK
+
+    def move_interpolated(self, j1=0, j2=0, j3=0, j4=0, j5=0, j6=0) -> int:
+        """Move with synchronized interpolation. Returns duration in ms."""
+        payload = struct.pack('<6h', j1, j2, j3, j4, j5, j6)
+        status, _, resp = self._send_receive(self.OP_MOVE_INTERPOLATED, payload)
+        if status == self.STATUS_OK and len(resp) >= 4:
+            return struct.unpack('<I', resp[:4])[0]
+        return -1
+
+    def get_interpolator_state(self) -> dict:
+        """Get interpolator state and progress."""
+        status, _, payload = self._send_receive(self.OP_GET_INTERPOLATOR_STATE)
+        if status == self.STATUS_OK and len(payload) >= 5:
+            state = payload[0]
+            progress = struct.unpack('<f', payload[1:5])[0]
+            state_names = ['Idle', 'Accelerating', 'Cruising', 'Decelerating', 'Complete']
+            return {
+                'state': state,
+                'state_name': state_names[state] if state < len(state_names) else 'Unknown',
+                'progress': progress
+            }
+        return None
+
+    def close(self):
+        """Close the socket."""
+        self.sock.close()
+```
+
+### Usage Examples
+
+```python
+# Connect to robot
+robot = SUPERClient('192.168.1.100', port=10182)
+
+# Test connection
+if robot.ping():
+    print("Robot connected!")
+
+# Enable motors
+robot.enable()
+
+# Get current position
+pos = robot.get_position()
+print(f"J1 position: {pos['j1']['pos']} steps")
+
+# Move to absolute position
+robot.move_absolute(j1=1000, j2=500, j3=-200)
+
+# Wait for motion to complete
+import time
+while robot.is_moving():
+    time.sleep(0.1)
+
+# Synchronized interpolated move
+duration = robot.move_interpolated(j1=500, j2=300, j3=-100, j4=0, j5=0, j6=50)
+print(f"Motion will take {duration} ms")
+
+# Monitor interpolation progress
+while True:
+    state = robot.get_interpolator_state()
+    print(f"State: {state['state_name']}, Progress: {state['progress']:.1f}%")
+    if state['state_name'] in ['Idle', 'Complete']:
+        break
+    time.sleep(0.05)
+
+# Disable motors and close
+robot.disable()
+robot.close()
+```
+
+### TCP Client Variant
+
+```python
+class SUPERClientTCP(SUPERClient):
+    """SUPER protocol TCP client."""
+
+    def __init__(self, host: str, port: int = 10182, timeout: float = 1.0):
+        self.host = host
+        self.port = port
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.settimeout(timeout)
+        self.sock.connect((host, port))
+
+    def _send_receive(self, opcode: int, payload: bytes = b'') -> tuple:
+        """Send request and receive response over TCP."""
+        frame = self._build_frame(opcode, payload)
+        self.sock.sendall(frame)
+
+        response = self.sock.recv(64)
+
+        if len(response) < 6 or response[0] != self.SENTINEL:
+            raise ValueError("Invalid response frame")
+
+        resp_opcode = response[3]
+        status = response[4]
+        resp_payload = response[5:-2]
+
+        return status, resp_opcode, resp_payload
+```
 
 ## See Also
 
