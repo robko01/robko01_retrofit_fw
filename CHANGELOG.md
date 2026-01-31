@@ -5,9 +5,24 @@ All notable changes to the Robko 01 Retrofit Firmware project are documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.59] - 2026-01-31
+
+### Added
+- Joint interpolator commands for SUPER protocol
+- OpCodesExtension.h with extended operation codes
+- MoveInterpolated command (OpCode 17) for synchronized joint motion
+- GetInterpolatorState command (OpCode 19) for status queries
+- Changelog update rules in CLAUDE.md
+
+### Changed
+- Enable ENABLE_INTERPOLATOR in all SUPER-enabled profiles
+
 ## [1.0.58] - 2026-01-31
 
 ### Added
+- Centralized Version.h for firmware version tracking
+- CHANGELOG.md with git history synthesis
+- Version management rules in CLAUDE.md
 - Ignore EnvDumpConfig.h in version control (auto-generated file)
 - Build verification for environment dump
 
