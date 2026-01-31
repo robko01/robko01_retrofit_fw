@@ -55,6 +55,10 @@
 
 #include "DebugPort.h"
 
+#if defined(ENABLE_ENV_DUMP)
+#include "EnvDump.h"
+#endif // defined(ENABLE_ENV_DUMP)
+
 #if defined(ENABLE_MOTORS)
 #include <AccelStepper.h>
 #include <MultiStepper.h>
@@ -797,6 +801,10 @@ void setup()
 
   //
   show_device_properties();
+
+#if defined(ENABLE_ENV_DUMP) && defined(ENV_DUMP_ON_BOOT)
+  EnvDump::print(Serial);
+#endif // defined(ENABLE_ENV_DUMP) && defined(ENV_DUMP_ON_BOOT)
 
 #if defined(ENABLE_MOTORS_IO)
   init_motors_pins();
