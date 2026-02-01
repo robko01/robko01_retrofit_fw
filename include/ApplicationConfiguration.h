@@ -817,6 +817,93 @@ A0 A1 A2
 #define MODBUS_SLAVE_ID 1
 #endif
 
+/**
+ * @brief Modbus holding register map (0-based).
+ *
+ * Current positions (read):
+ * 0-5   : J1-J6 current position [steps]
+ *
+ * Target positions (read/write):
+ * 6-11  : J1-J6 target position [steps]
+ *
+ * Control/status:
+ * 12    : Motors enabled (0/1)
+ * 13    : Robot busy (0/1)
+ * 14-19 : J1-J6 max speed [steps/sec]
+ * 20    : Start motion (write 1)
+ * 21    : Stop motion (write 1)
+ */
+#if !defined(MODBUS_REG_CURRENT_POS_J1)
+#define MODBUS_REG_CURRENT_POS_J1 0
+#endif
+#if !defined(MODBUS_REG_CURRENT_POS_J2)
+#define MODBUS_REG_CURRENT_POS_J2 1
+#endif
+#if !defined(MODBUS_REG_CURRENT_POS_J3)
+#define MODBUS_REG_CURRENT_POS_J3 2
+#endif
+#if !defined(MODBUS_REG_CURRENT_POS_J4)
+#define MODBUS_REG_CURRENT_POS_J4 3
+#endif
+#if !defined(MODBUS_REG_CURRENT_POS_J5)
+#define MODBUS_REG_CURRENT_POS_J5 4
+#endif
+#if !defined(MODBUS_REG_CURRENT_POS_J6)
+#define MODBUS_REG_CURRENT_POS_J6 5
+#endif
+
+#if !defined(MODBUS_REG_TARGET_POS_J1)
+#define MODBUS_REG_TARGET_POS_J1 6
+#endif
+#if !defined(MODBUS_REG_TARGET_POS_J2)
+#define MODBUS_REG_TARGET_POS_J2 7
+#endif
+#if !defined(MODBUS_REG_TARGET_POS_J3)
+#define MODBUS_REG_TARGET_POS_J3 8
+#endif
+#if !defined(MODBUS_REG_TARGET_POS_J4)
+#define MODBUS_REG_TARGET_POS_J4 9
+#endif
+#if !defined(MODBUS_REG_TARGET_POS_J5)
+#define MODBUS_REG_TARGET_POS_J5 10
+#endif
+#if !defined(MODBUS_REG_TARGET_POS_J6)
+#define MODBUS_REG_TARGET_POS_J6 11
+#endif
+
+#if !defined(MODBUS_REG_MOTORS_ENABLED)
+#define MODBUS_REG_MOTORS_ENABLED 12
+#endif
+#if !defined(MODBUS_REG_ROBOT_BUSY)
+#define MODBUS_REG_ROBOT_BUSY 13
+#endif
+
+#if !defined(MODBUS_REG_MAX_SPEED_J1)
+#define MODBUS_REG_MAX_SPEED_J1 14
+#endif
+#if !defined(MODBUS_REG_MAX_SPEED_J2)
+#define MODBUS_REG_MAX_SPEED_J2 15
+#endif
+#if !defined(MODBUS_REG_MAX_SPEED_J3)
+#define MODBUS_REG_MAX_SPEED_J3 16
+#endif
+#if !defined(MODBUS_REG_MAX_SPEED_J4)
+#define MODBUS_REG_MAX_SPEED_J4 17
+#endif
+#if !defined(MODBUS_REG_MAX_SPEED_J5)
+#define MODBUS_REG_MAX_SPEED_J5 18
+#endif
+#if !defined(MODBUS_REG_MAX_SPEED_J6)
+#define MODBUS_REG_MAX_SPEED_J6 19
+#endif
+
+#if !defined(MODBUS_REG_START_MOTION)
+#define MODBUS_REG_START_MOTION 20
+#endif
+#if !defined(MODBUS_REG_STOP_MOTION)
+#define MODBUS_REG_STOP_MOTION 21
+#endif
+
 #if defined(MODBUS_TCP)
 /**
  * @brief Modbus TCP server port.

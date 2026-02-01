@@ -65,30 +65,30 @@ ESP32 GPIO (any) --> DE/RE (Direction control, active HIGH for TX)
 
 ### Holding Registers (Function Codes 03, 06, 16)
 
-| Address | Name | Access | Description |
-|---------|------|--------|-------------|
-| 0 | CurrentPos_J1 | Read | Current position of Joint 1 (steps) |
-| 1 | CurrentPos_J2 | Read | Current position of Joint 2 (steps) |
-| 2 | CurrentPos_J3 | Read | Current position of Joint 3 (steps) |
-| 3 | CurrentPos_J4 | Read | Current position of Joint 4 (steps) |
-| 4 | CurrentPos_J5 | Read | Current position of Joint 5 (steps) |
-| 5 | CurrentPos_J6 | Read | Current position of Joint 6 (steps) |
-| 6 | TargetPos_J1 | R/W | Target position of Joint 1 (steps) |
-| 7 | TargetPos_J2 | R/W | Target position of Joint 2 (steps) |
-| 8 | TargetPos_J3 | R/W | Target position of Joint 3 (steps) |
-| 9 | TargetPos_J4 | R/W | Target position of Joint 4 (steps) |
-| 10 | TargetPos_J5 | R/W | Target position of Joint 5 (steps) |
-| 11 | TargetPos_J6 | R/W | Target position of Joint 6 (steps) |
-| 12 | MotorsEnabled | R/W | Motors enable state (0=disabled, 1=enabled) |
-| 13 | RobotBusy | Read | Robot busy status (0=idle, 1=moving) |
-| 14 | MaxSpeed_J1 | R/W | Maximum speed of Joint 1 (steps/sec) |
-| 15 | MaxSpeed_J2 | R/W | Maximum speed of Joint 2 (steps/sec) |
-| 16 | MaxSpeed_J3 | R/W | Maximum speed of Joint 3 (steps/sec) |
-| 17 | MaxSpeed_J4 | R/W | Maximum speed of Joint 4 (steps/sec) |
-| 18 | MaxSpeed_J5 | R/W | Maximum speed of Joint 5 (steps/sec) |
-| 19 | MaxSpeed_J6 | R/W | Maximum speed of Joint 6 (steps/sec) |
-| 20 | StartMotion | Write | Start interpolated motion (write 1) |
-| 21 | StopMotion | Write | Stop all motion (write 1) |
+| Address | Macro | Name | Access | Description |
+|---------|-------|------|--------|-------------|
+| 0 | `MODBUS_REG_CURRENT_POS_J1` | CurrentPos_J1 | Read | Current position of Joint 1 (steps) |
+| 1 | `MODBUS_REG_CURRENT_POS_J2` | CurrentPos_J2 | Read | Current position of Joint 2 (steps) |
+| 2 | `MODBUS_REG_CURRENT_POS_J3` | CurrentPos_J3 | Read | Current position of Joint 3 (steps) |
+| 3 | `MODBUS_REG_CURRENT_POS_J4` | CurrentPos_J4 | Read | Current position of Joint 4 (steps) |
+| 4 | `MODBUS_REG_CURRENT_POS_J5` | CurrentPos_J5 | Read | Current position of Joint 5 (steps) |
+| 5 | `MODBUS_REG_CURRENT_POS_J6` | CurrentPos_J6 | Read | Current position of Joint 6 (steps) |
+| 6 | `MODBUS_REG_TARGET_POS_J1` | TargetPos_J1 | R/W | Target position of Joint 1 (steps) |
+| 7 | `MODBUS_REG_TARGET_POS_J2` | TargetPos_J2 | R/W | Target position of Joint 2 (steps) |
+| 8 | `MODBUS_REG_TARGET_POS_J3` | TargetPos_J3 | R/W | Target position of Joint 3 (steps) |
+| 9 | `MODBUS_REG_TARGET_POS_J4` | TargetPos_J4 | R/W | Target position of Joint 4 (steps) |
+| 10 | `MODBUS_REG_TARGET_POS_J5` | TargetPos_J5 | R/W | Target position of Joint 5 (steps) |
+| 11 | `MODBUS_REG_TARGET_POS_J6` | TargetPos_J6 | R/W | Target position of Joint 6 (steps) |
+| 12 | `MODBUS_REG_MOTORS_ENABLED` | MotorsEnabled | R/W | Motors enable state (0=disabled, 1=enabled) |
+| 13 | `MODBUS_REG_ROBOT_BUSY` | RobotBusy | Read | Robot busy status (0=idle, 1=moving) |
+| 14 | `MODBUS_REG_MAX_SPEED_J1` | MaxSpeed_J1 | R/W | Maximum speed of Joint 1 (steps/sec) |
+| 15 | `MODBUS_REG_MAX_SPEED_J2` | MaxSpeed_J2 | R/W | Maximum speed of Joint 2 (steps/sec) |
+| 16 | `MODBUS_REG_MAX_SPEED_J3` | MaxSpeed_J3 | R/W | Maximum speed of Joint 3 (steps/sec) |
+| 17 | `MODBUS_REG_MAX_SPEED_J4` | MaxSpeed_J4 | R/W | Maximum speed of Joint 4 (steps/sec) |
+| 18 | `MODBUS_REG_MAX_SPEED_J5` | MaxSpeed_J5 | R/W | Maximum speed of Joint 5 (steps/sec) |
+| 19 | `MODBUS_REG_MAX_SPEED_J6` | MaxSpeed_J6 | R/W | Maximum speed of Joint 6 (steps/sec) |
+| 20 | `MODBUS_REG_START_MOTION` | StartMotion | Write | Start interpolated motion (write 1) |
+| 21 | `MODBUS_REG_STOP_MOTION` | StopMotion | Write | Stop all motion (write 1) |
 
 ### Supported Function Codes
 
