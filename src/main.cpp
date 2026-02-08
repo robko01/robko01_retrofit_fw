@@ -56,6 +56,12 @@
 
 #include "DebugPort.h"
 
+// When Modbus RTU uses Serial as the bus, suppress all debug output
+#if defined(MODBUS_RTU)
+#undef DEBUGLOG
+#define DEBUGLOG(...)
+#endif // defined(MODBUS_RTU)
+
 #if defined(ENABLE_ENV_DUMP)
 #include "EnvDump.h"
 #endif // defined(ENABLE_ENV_DUMP)
@@ -4385,8 +4391,11 @@ ModbusMessage cb_modbus_write_holding(ModbusMessage request)
         currentPos[i] = get_stepper_position(i);
         targets[i] = get_stepper_target(i);
       }
-      Interpolator_g.startMotion(currentPos, targets);
-      OperationMode_g = OperationModes::Interpolated;
+      if (Interpolator_g.startMotion(currentPos, targets))
+      {
+        OperationMode_g = OperationModes::Interpolated;
+        enable_drivers(true);
+      }
     }
 #endif
   }
