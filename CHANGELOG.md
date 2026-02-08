@@ -5,6 +5,14 @@ All notable changes to the Robko 01 Retrofit Firmware project are documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.62] - 2026-02-08
+
+### Fixed
+- Add enable_drivers(true) to Modbus RTU StartMotion handler (register 20)
+- Suppress DEBUGLOG output when Modbus RTU uses Serial as communication bus
+- Add --boot-wait to test_modbus_rtu.py for ESP32 DTR reset handling
+- Remove deprecated method="rtu" param from pymodbus client
+
 ## [1.0.61] - 2026-02-01
 
 ### Added
