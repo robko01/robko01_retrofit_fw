@@ -49,7 +49,9 @@ Connect to the ESP32's main UART pins:
 | RX (GPIO3) | Receive | TX on master device |
 | GND | Ground | Common ground |
 
-**Note:** When using Modbus RTU, the main Serial port is dedicated to Modbus communication. Debug output is disabled.
+**Important notes:**
+- When using Modbus RTU, the main Serial port is dedicated to Modbus communication. All `DEBUGLOG` output is automatically suppressed (via `#undef` in `main.cpp` when `MODBUS_RTU` is defined) to prevent corruption of the Modbus bus.
+- Opening the serial port from a PC typically toggles DTR/RTS, which resets the ESP32 DevKit. Clients should wait ~5 seconds after connecting for the ESP32 to boot before sending Modbus requests.
 
 ### RS-485 Connection (Optional)
 
@@ -110,6 +112,7 @@ pip install pymodbus
 
 ```python
 from pymodbus.client import ModbusSerialClient
+import time
 
 # Create RTU client
 client = ModbusSerialClient(
@@ -123,6 +126,8 @@ client = ModbusSerialClient(
 
 # Connect to the device
 if client.connect():
+    # Wait for ESP32 to boot (opening port resets the board via DTR)
+    time.sleep(5)
     print("Connected to Robko 01")
 else:
     print("Connection failed")
@@ -289,8 +294,13 @@ class RobkoModbusRTU:
         )
         self.slave_id = slave_id
 
-    def connect(self):
-        return self.client.connect()
+    def connect(self, boot_wait=5.0):
+        """Connect and wait for ESP32 boot (DTR resets the board)"""
+        if not self.client.connect():
+            return False
+        if boot_wait > 0:
+            time.sleep(boot_wait)
+        return True
 
     def disconnect(self):
         self.client.close()
@@ -418,10 +428,11 @@ if __name__ == "__main__":
 
 ### No Response from Device
 
-1. Check serial port connection and cable
-2. Verify baudrate matches firmware configuration
-3. Confirm slave ID is correct (default: 1)
-4. Ensure proper TX/RX wiring (may need crossover)
+1. **Wait for ESP32 boot** — opening the serial port resets the board via DTR/RTS. Wait at least 5 seconds after connecting before sending requests
+2. Check serial port connection and cable
+3. Verify baudrate matches firmware configuration
+4. Confirm slave ID is correct (default: 1)
+5. Ensure proper TX/RX wiring (may need crossover)
 
 ### Timeout Errors
 
