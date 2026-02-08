@@ -1,4 +1,4 @@
-# Robko01 Retrofit Firmware
+﻿# Robko01 Retrofit Firmware
 
 Firmware and PlatformIO build setup for the Robko01 retrofit project. This repo includes multiple build profiles (serial, OTA, Modbus TCP/RTU, PS4), a `.env`-driven configuration flow, and helper scripts for repeatable builds.
 
@@ -9,6 +9,7 @@ Firmware and PlatformIO build setup for the Robko01 retrofit project. This repo 
 - Modbus documentation
 - Changelog
 - Contributing
+- Agent guidelines
 
 ## Getting started — VS Code, PlatformIO & Git
 
@@ -102,6 +103,10 @@ See `CHANGELOG.md` for release notes and feature history.
 
 See `CONTRIBUTING.md` for branch strategy, commit format, testing expectations, and merge/version workflow.
 
+## Agent guidelines
+
+See `AGENTS` for coding conventions and assistant-specific project guidance.
+
 ## Build (full workflow)
 
 ### Windows
@@ -123,4 +128,6 @@ pio run -t clean
 pio run -e serial_ps4
 pio run -t upload
 ```
+
+
 
