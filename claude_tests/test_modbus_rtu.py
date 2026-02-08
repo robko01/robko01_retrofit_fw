@@ -62,13 +62,18 @@ def main() -> int:
         help="Comma-separated target positions (6 values)",
     )
     parser.add_argument("--wait", action="store_true", help="Wait for motion to complete")
+    parser.add_argument(
+        "--boot-wait",
+        type=float,
+        default=5.0,
+        help="Seconds to wait after connect for ESP32 boot (DTR resets the board)",
+    )
     args = parser.parse_args()
 
     print("Robko01 Modbus RTU test")
     print(f"Port: {args.port}  Baud: {args.baud}  Slave: {args.slave}")
 
     client = ModbusSerialClient(
-        method="rtu",
         port=args.port,
         baudrate=args.baud,
         parity=args.parity,
@@ -79,6 +84,10 @@ def main() -> int:
     if not client.connect():
         print("Connection failed")
         return 1
+
+    if args.boot_wait > 0:
+        print(f"Waiting {args.boot_wait}s for ESP32 boot...")
+        time.sleep(args.boot_wait)
 
     try:
         positions = _read_holding(client, REG_CURRENT_POS, 6, args.slave)
