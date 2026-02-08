@@ -1,4 +1,4 @@
-# CLAUDE.md - Project Guidelines
+﻿# AGENTS - Project Guidelines
 
 This file provides guidance for Claude Code when working with this codebase.
 
@@ -33,19 +33,13 @@ pio run -t clean
 
 ## Project Structure
 
-```
-├── src/                  # Source files
-│   └── main.cpp          # Main application
-├── include/              # Header files
-│   └── ApplicationConfiguration.h  # Feature flags and configuration
-├── lib/                  # Project-specific libraries
-│   └── Interpolator/     # Multi-joint interpolation library
-├── claude_tests/         # Claude Code test scripts (PowerShell)
-├── platformio.ini        # Main PlatformIO configuration
-├── platformio_*.ini      # Environment-specific configurations
-└── .pio/                 # Build output (generated)
-```
-
+- `src/` (source files, main entry: `src/main.cpp`)
+- `include/` (headers, config in `include/ApplicationConfiguration.h`)
+- `lib/` (project libraries, includes `lib/Interpolator/`)
+- `claude_tests/` (PowerShell hardware test scripts)
+- `platformio.ini` (main PlatformIO config)
+- `platformio_*.ini` (environment-specific configs)
+- `.pio/` (generated build output)
 ## Claude Tests Folder
 
 The `claude_tests/` folder contains test scripts created by Claude Code for hardware testing.
@@ -55,6 +49,7 @@ The `claude_tests/` folder contains test scripts created by Claude Code for hard
 | Script | Description | Usage |
 |--------|-------------|-------|
 | `test_interpolator.ps1` | Tests @MOVEJ commands on robot | `powershell -ExecutionPolicy Bypass -File claude_tests/test_interpolator.ps1` |
+| `test_modbus_rtu.py` | Modbus RTU read/write/move test | `python claude_tests/test_modbus_rtu.py --port COM7 --move --wait` |
 
 ### Adding New Tests
 
@@ -303,3 +298,7 @@ pio test -e native
 ## Contributing
 
 Contribution workflow, branch strategy, commit format, testing expectations, and version/changelog process are documented in `CONTRIBUTING.md`.
+
+
+
+
