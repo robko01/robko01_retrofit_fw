@@ -8,6 +8,7 @@ Firmware and PlatformIO build setup for the Robko01 retrofit project. This repo 
 - Configuration via `.env`
 - Modbus documentation
 - Changelog
+- Contributing
 
 ## Getting started — VS Code, PlatformIO & Git
 
@@ -96,6 +97,10 @@ pio run -e modbus_rtu
 ## Changelog
 
 See `CHANGELOG.md` for release notes and feature history.
+
+## Contributing
+
+See `CONTRIBUTING.md` for branch strategy, commit format, testing expectations, and merge/version workflow.
 
 ## Build (full workflow)
 
